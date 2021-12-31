@@ -11,27 +11,23 @@ import static carlos.webcrawler.Options.*;
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.newSetFromMap;
 
-public class WebScraper implements Serializable, Closeable {
+public class WebScraper implements Serializable, AutoCloseable {
     @Serial
     private static final long serialVersionUID = 5440710515833287425L;
     private final Set<String> visitedLinks;
-    private final Map<ContentType, Set<String>> contentMap;
     private final Queue<String> unvisitedLinks;
     private final String LINK_PREFIX;
-    private final String startURL;
     private final OptionHandler<?> optionHandler;
     private final ContentHandler contentHandler;
     private transient ThreadPoolHandler threadPoolHandler;
     private boolean closed = false;
 
 
-    WebScraper(String startURL, String linkPrefix, OptionHandler<?> optionHandler, ContentHandler contentHandler, ThreadPoolHandler threadPoolHandler) {
-        this.startURL = startURL;
+    WebScraper(String linkPrefix, OptionHandler<?> optionHandler, ContentHandler contentHandler, ThreadPoolHandler threadPoolHandler) {
         this.LINK_PREFIX = linkPrefix;
         this.optionHandler = optionHandler;
         this.contentHandler = contentHandler;
         this.threadPoolHandler = threadPoolHandler;
-        contentMap = initialiseContentMap();
         visitedLinks = newSetFromMap(new ConcurrentHashMap<>());
         unvisitedLinks = new ConcurrentLinkedQueue<>();
     }
@@ -54,36 +50,36 @@ public class WebScraper implements Serializable, Closeable {
         return closed;
     }
 
-    private Map<ContentType, Set<String>> initialiseContentMap() {
-        var map = new ConcurrentHashMap<ContentType, Set<String>>();
-        for(var ct : contentHandler.getTypes())
-            map.put(ct, newSetFromMap(new ConcurrentHashMap<>()));
-        return map;
-    }
-
-    public WebScraper start() {
-        addLinks(visitAndRetrieveHTML(startURL));
+    public WebScraper startFrom(String startURL) {
+        addUnvisitedLinksToQueue(visitAndRetrieveHTML(startURL));
         threadPoolHandler.setTask(this::main).start();
         return this;
     }
 
     private void saveAllContent() throws IOException {
-        for(var ct : contentMap.keySet())
-            contentHandler.saveContent(contentMap.get(ct), ct);
+        for(var ct : contentHandler.getTypes())
+            contentHandler.saveContent(ct);
     }
 
     public Path getSavedContent(ContentType ct) {
         return contentHandler.getContentPath(ct);
     }
 
-    private synchronized void flushContent() throws IOException {
-        for (var ct : contentMap.keySet()) {
-            var contentData = contentMap.get(ct);
-            if (contentHandler.getCount(ct) >= 1000000) {
-                contentHandler.saveContent(contentData, ct);
-                contentData.clear();
+    private synchronized void flushContent() {
+        for (var ct : contentHandler.getTypes()) {
+            if (ct.getCollected() >= 1000000) {
+                try {
+                    saveAndClear(ct);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
+    }
+
+    private synchronized void saveAndClear(ContentType ct) throws IOException {
+        contentHandler.saveContent(ct);
+        ct.clearData();
     }
 
     private void saveLinks() throws IOException {
@@ -93,46 +89,34 @@ public class WebScraper implements Serializable, Closeable {
 
     private void printFinished() {
         System.out.println("--------------");
-        System.out.println("FINISHED! :D");
+        System.out.println(" FINISHED! :D");
         System.out.println("--------------");
     }
 
     private void main() {
-        while (contentHandler.notAllAreCollected(contentMap.keySet())) {
+        while (optionHandler.isTrue(UNLIMITED) || contentHandler.notAllAreCollected()) {
             String html = visitAndRetrieveHTML(LINK_PREFIX + nextLink());
-            addLinks(html);
-            for(var ct : contentMap.keySet()) {
+            addUnvisitedLinksToQueue(html);
+            for(var ct : contentHandler.getTypes()) {
                 addContentDataAndUpdateCount(html, ct);
                 printDebugMain(ct);
             }
-            if (threadPoolHandler.shouldStop(currentThread()))
+            if (threadPoolHandler.shouldStop())
                 break;
         }
     }
 
-    private synchronized void addContentDataAndUpdateCount(String html, ContentType ct) {
-        var contentData = contentMap.get(ct);
-        int countBef = contentData.size();
-        if (contentData.size() < ct.limit()) {
-            contentData.addAll(addContent(ct, html));
-            contentHandler.addCount(ct, contentMap.get(ct).size() - countBef);
-        }
-        try {
-            flushContent();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    private synchronized void addContentDataAndUpdateCount(String html, ContentType contentType) {
+        if (!contentType.reachedLimit())
+            contentType.addData(getContent(contentType, html));
+        flushContent();
     }
 
     private void printDebugMain(ContentType ct) {
         if(optionHandler.isTrue(DEBUG_MODE)) {
             System.out.println(currentThread().getName());
-            System.out.println("accumulated " + ct.NAME + ": " + contentHandler.getCount(ct));
+            System.out.println("accumulated " + ct.NAME + ": " + ct.getCollected());
         }
-    }
-
-    public synchronized void addLinks(String html) {
-        addUnvisitedLinksToQueue(addContent(contentHandler.getLink(), html));
     }
 
     private synchronized String nextLink() {
@@ -144,8 +128,10 @@ public class WebScraper implements Serializable, Closeable {
         return link;
     }
 
-    private synchronized void addUnvisitedLinksToQueue(Set<String> links) {
-        links.stream().filter(s -> !visitedLinks.contains(s)).forEach(unvisitedLinks::add);
+    private synchronized void addUnvisitedLinksToQueue(String html) {
+        contentHandler.getLinks(html).stream()
+                .filter(s -> !visitedLinks.contains(s))
+                .forEach(unvisitedLinks::add);
     }
 
     private void printDebugRL() {
@@ -173,7 +159,7 @@ public class WebScraper implements Serializable, Closeable {
             System.out.println("visiting " + url);
     }
 
-    public synchronized Set<String> addContent(ContentType gc, String html) {
+    public synchronized Set<String> getContent(ContentType gc, String html) {
         return contentHandler.getContent(gc, html);
     }
 

@@ -5,14 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a2b93da5-f13f-4b8a-a660-d86e511bfdca" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/Content.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/ContentHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/ContentHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/ContentType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/ContentType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/HashComparator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/HashComparator.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/OptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/OptionHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/ThreadPoolHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/ThreadPoolHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/WebScraper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/WebScraper.java" afterDir="false" />

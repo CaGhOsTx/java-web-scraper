@@ -6,25 +6,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class ContentHandler implements Serializable {
     @Serial
     private static final long serialVersionUID = 395515185246116492L;
     private final ContentType link;
     private final List<ContentType> types;
-    Map<ContentType, Integer> filledCount;
-    private boolean unlimited;
-    
+
     public ContentHandler(ContentType link, ContentType... otherContent) {
         this.link = link;
         types = Arrays.stream(otherContent).toList();
-        filledCount = new ConcurrentHashMap<>();
-        types.forEach(ct -> filledCount.put(ct, 0));
-    }
-
-    void setUnlimited () {
-        unlimited = true;
     }
     
     Set<String> getLinks(String html) {
@@ -52,15 +43,21 @@ public class ContentHandler implements Serializable {
         return content;
     }
 
-    void addCount(ContentType ct, int surplus) {
-        filledCount.put(ct, filledCount.get(ct) + surplus);
-    }
-
-    void saveContent(Collection<String> content, ContentType ct) throws IOException {
+    void saveContent(ContentType ct) throws IOException {
         var option = setOption(ct);
         try (var w = Files.newBufferedWriter(getContentPath(ct), option)) {
-            for (var c : content) {
-                w.write(c);
+            for (var data : ct.getData()) {
+                w.write(data);
+                w.newLine();
+            }
+        }
+    }
+
+    void saveContent(Collection<?> data, ContentType ct) throws IOException {
+        var option = setOption(ct);
+        try (var w = Files.newBufferedWriter(getContentPath(ct), option)) {
+            for (var d : data) {
+                w.write(d.toString());
                 w.newLine();
             }
         }
@@ -84,11 +81,11 @@ public class ContentHandler implements Serializable {
         return types;
     }
 
-    boolean notAllAreCollected(Set<ContentType> contentMap) {
-        return unlimited | !contentMap.stream().allMatch(ct -> ct.isCollected(filledCount.get(ct)));
+    boolean notAllAreCollected() {
+        return !types.stream().allMatch(ContentType::reachedLimit);
     }
 
     public int getCount(ContentType ct) {
-        return filledCount.get(ct);
+        return ct.getCollected();
     }
 }

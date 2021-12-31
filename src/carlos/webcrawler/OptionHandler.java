@@ -44,8 +44,6 @@ public class OptionHandler<T extends Options> implements Serializable {
     }
 
     public boolean isTrue(Options o) {
-        var a = Integer.toString((res[getIndex(o.position)]), 2);
-        var b = Integer.toString(1 << o.position - 1, 2);
         return (res[getIndex(o.position)] & (1 << o.position)) != 0;
     }
 

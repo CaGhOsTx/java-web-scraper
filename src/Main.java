@@ -60,17 +60,12 @@ public class Main {
 
             @Override public int limit() {return 10_000;}
         };
-        try (var a = new WebScraperBuilder("https://en.wikipedia.org/wiki/Main_Page",
+        try (var scraper = new WebScraperBuilder(
                 "https://en.wikipedia.org/wiki/", link, text)
                 .withOptions(SAVE_CONTENT, DEBUG_MODE, SAVE_LINKS)
-                .withThreadPoolSize(5).build().start()) {
-            try (var b = new WebScraperBuilder("https://en.wikipedia.org/wiki/Main_Page",
-                    "https://en.wikipedia.org/wiki/", link, text)
-                    .withOptions(SAVE_CONTENT, DEBUG_MODE, SAVE_LINKS)
-                    .withThreadPoolSize(5).build().start()) {
-                new HashComparator(b.getSavedContent(text)).start();
-            }
-            //new HashComparator(ws.getSavedContent(text)).start();
+                .withThreadPoolSize(5).build().startFrom("https://en.wikipedia.org/wiki/Main_Page")) {
+
+            new HashComparator(scraper.getSavedContent(text)).start();
         }
     }
 }

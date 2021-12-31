@@ -1,13 +1,12 @@
 package carlos.webcrawler;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -18,8 +17,8 @@ import static java.nio.file.StandardOpenOption.CREATE;
 
 public class HashComparator {
     private int max = 0;
-    private Path p;
-    private Path result = Paths.get("result.txt");
+    private final Path p;
+    private final Path result = Paths.get("result.txt");
 
     public HashComparator(Path p) {
         this.p = p;

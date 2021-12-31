@@ -41,7 +41,7 @@ public class ThreadPoolHandler {
         return threadPool.length;
     }
 
-    public boolean shouldStop(Thread t) {
+    public boolean shouldStop() {
         return stop;
     }
 }
