@@ -22,6 +22,7 @@ public class Main {
             @Override
             public String pattern() {
                 return "(?<=href=\"/wiki/)(?!.*:).+?(?=\")";
+               // return "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)";
             }
 
             @Override
@@ -59,12 +60,17 @@ public class Main {
 
             @Override public int limit() {return 10_000;}
         };
-        var ws = new WebScraperBuilder("https://en.wikipedia.org/wiki/Main_Page",
-                "https://en.wikipedia.org/wiki/", new ContentHandler(link, text))
+        try (var a = new WebScraperBuilder("https://en.wikipedia.org/wiki/Main_Page",
+                "https://en.wikipedia.org/wiki/", link, text)
                 .withOptions(SAVE_CONTENT, DEBUG_MODE, SAVE_LINKS)
-                .withThreadPoolSize(5)
-                .build()
-                .start();
-        new HashComparator(ws.getSavedContent(text)).start();
+                .withThreadPoolSize(5).build().start()) {
+            try (var b = new WebScraperBuilder("https://en.wikipedia.org/wiki/Main_Page",
+                    "https://en.wikipedia.org/wiki/", link, text)
+                    .withOptions(SAVE_CONTENT, DEBUG_MODE, SAVE_LINKS)
+                    .withThreadPoolSize(5).build().start()) {
+                new HashComparator(b.getSavedContent(text)).start();
+            }
+            //new HashComparator(ws.getSavedContent(text)).start();
+        }
     }
 }

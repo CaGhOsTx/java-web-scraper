@@ -1,8 +1,11 @@
 package carlos.webcrawler;
 
+import java.io.*;
 import java.util.List;
 
-public class OptionHandler<T extends Options> {
+public class OptionHandler<T extends Options> implements Serializable {
+    @Serial
+    private static final long serialVersionUID = -7870065255227151797L;
     static OptionHandler<?> EMPTY = new OptionHandler<>();
     int[] res;
 
@@ -14,6 +17,15 @@ public class OptionHandler<T extends Options> {
         res = getOptionsAsInt(options);
     }
 
+    @Serial
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+    }
+
+    @Serial
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+    }
 
     int[] getOptionsAsInt(List<T> setOptions) {
         int[] options = new int[Options.values().length / 32 + 1];

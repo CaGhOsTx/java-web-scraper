@@ -1,6 +1,6 @@
 package carlos.webcrawler;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -8,8 +8,10 @@ import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ContentHandler {
-    private ContentType link;
+public class ContentHandler implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 395515185246116492L;
+    private final ContentType link;
     private final List<ContentType> types;
     Map<ContentType, Integer> filledCount;
     private boolean unlimited;
@@ -28,6 +30,16 @@ public class ContentHandler {
     Set<String> getLinks(String html) {
         return getContent(getLink(), html);
     }
+
+    @Serial
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+    }
+
+    @Serial
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+    }
     
     Set<String> getContent(ContentType ct, String html) {
         var matcher = ct.getPATTERN().matcher(ct.transform(html));
@@ -44,20 +56,18 @@ public class ContentHandler {
         filledCount.put(ct, filledCount.get(ct) + surplus);
     }
 
-    void saveContent(Collection<String> content, ContentType ct) {
+    void saveContent(Collection<String> content, ContentType ct) throws IOException {
         var option = setOption(ct);
         try (var w = Files.newBufferedWriter(getContentPath(ct), option)) {
             for (var c : content) {
                 w.write(c);
                 w.newLine();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
     Path getContentPath(ContentType ct) {
-        return Paths.get(this + "::" + ct.NAME + ".txt");
+        return Paths.get(ct.getClass() + "@" + ct.hashCode() + "::" + ct.NAME + ".txt");
     }
 
     private StandardOpenOption setOption(ContentType ct) {

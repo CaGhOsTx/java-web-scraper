@@ -7,15 +7,14 @@ import static java.util.stream.Collectors.toList;
 
 public class WebScraperBuilder {
     private final String startURL, linkPrefix;
-    private int numberOfSentences, minLength, maxLength;
     private OptionHandler<?> optionHandler = OptionHandler.EMPTY;
     private final ContentHandler contentHandler;
     private ThreadPoolHandler threadPoolHandler;
 
-    public WebScraperBuilder(String startURL, String linkPrefix, ContentHandler contentHandler) {
+    public WebScraperBuilder(String startURL, String linkPrefix, ContentType link, ContentType... content) {
         this.startURL = startURL;
         this.linkPrefix = linkPrefix;
-        this.contentHandler = contentHandler;
+        this.contentHandler = new ContentHandler(link, content);
     }
 
     @SafeVarargs

@@ -8,9 +8,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static carlos.webcrawler.Options.*;
+import static java.lang.Thread.currentThread;
 import static java.util.Collections.newSetFromMap;
 
-public class WebScraper implements Serializable {
+public class WebScraper implements Serializable, Closeable {
+    @Serial
+    private static final long serialVersionUID = 5440710515833287425L;
     private final Set<String> visitedLinks;
     private final Map<ContentType, Set<String>> contentMap;
     private final Queue<String> unvisitedLinks;
@@ -18,7 +21,8 @@ public class WebScraper implements Serializable {
     private final String startURL;
     private final OptionHandler<?> optionHandler;
     private final ContentHandler contentHandler;
-    private final ThreadPoolHandler threadPoolHandler;
+    private transient ThreadPoolHandler threadPoolHandler;
+    private boolean closed = false;
 
 
     WebScraper(String startURL, String linkPrefix, OptionHandler<?> optionHandler, ContentHandler contentHandler, ThreadPoolHandler threadPoolHandler) {
@@ -32,6 +36,24 @@ public class WebScraper implements Serializable {
         unvisitedLinks = new ConcurrentLinkedQueue<>();
     }
 
+    @Serial
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        threadPoolHandler.close();
+        out.defaultWriteObject();
+        out.writeObject(threadPoolHandler.size());
+    }
+
+    @Serial
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        threadPoolHandler = new ThreadPoolHandler((int) in.readObject());
+        threadPoolHandler.setTask(this::main).start();
+    }
+
+    public boolean isFinished () {
+        return closed;
+    }
+
     private Map<ContentType, Set<String>> initialiseContentMap() {
         var map = new ConcurrentHashMap<ContentType, Set<String>>();
         for(var ct : contentHandler.getTypes())
@@ -39,34 +61,13 @@ public class WebScraper implements Serializable {
         return map;
     }
 
-    public static WebScraper load(Path p) throws IOException, ClassNotFoundException {
-        try(var ois = new ObjectInputStream(Files.newInputStream(p))) {
-            return (WebScraper) ois.readObject();
-        }
-    }
-
     public WebScraper start() {
         addLinks(visitAndRetrieveHTML(startURL));
-        threadPoolHandler.setTask(this::main);
-        waitForProcessToFinish();
-        if(optionHandler.isTrue(DEBUG_MODE)) printFinished();
-        if(optionHandler.isTrue(SAVE_LINKS)) saveLinks();
-        if(optionHandler.isTrue(SAVE_CONTENT)) saveAllContent();
+        threadPoolHandler.setTask(this::main).start();
         return this;
     }
 
-    private void waitForProcessToFinish() {
-        while(!threadPoolHandler.allTerminated()) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            flushContent();
-        }
-    }
-
-    private void saveAllContent() {
+    private void saveAllContent() throws IOException {
         for(var ct : contentMap.keySet())
             contentHandler.saveContent(contentMap.get(ct), ct);
     }
@@ -75,7 +76,7 @@ public class WebScraper implements Serializable {
         return contentHandler.getContentPath(ct);
     }
 
-    private void flushContent() {
+    private synchronized void flushContent() throws IOException {
         for (var ct : contentMap.keySet()) {
             var contentData = contentMap.get(ct);
             if (contentHandler.getCount(ct) >= 1000000) {
@@ -85,7 +86,7 @@ public class WebScraper implements Serializable {
         }
     }
 
-    private void saveLinks() {
+    private void saveLinks() throws IOException {
         contentHandler.saveContent(visitedLinks, contentHandler.getLink());
         contentHandler.saveContent(unvisitedLinks, contentHandler.getLink());
     }
@@ -96,14 +97,6 @@ public class WebScraper implements Serializable {
         System.out.println("--------------");
     }
 
-    public void writeObject(String fileName) {
-        try(var oos = new ObjectOutputStream(new FileOutputStream(fileName))) {
-            oos.writeObject(this);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     private void main() {
         while (contentHandler.notAllAreCollected(contentMap.keySet())) {
             String html = visitAndRetrieveHTML(LINK_PREFIX + nextLink());
@@ -112,6 +105,8 @@ public class WebScraper implements Serializable {
                 addContentDataAndUpdateCount(html, ct);
                 printDebugMain(ct);
             }
+            if (threadPoolHandler.shouldStop(currentThread()))
+                break;
         }
     }
 
@@ -122,11 +117,16 @@ public class WebScraper implements Serializable {
             contentData.addAll(addContent(ct, html));
             contentHandler.addCount(ct, contentMap.get(ct).size() - countBef);
         }
+        try {
+            flushContent();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void printDebugMain(ContentType ct) {
         if(optionHandler.isTrue(DEBUG_MODE)) {
-            System.out.println(Thread.currentThread().getName());
+            System.out.println(currentThread().getName());
             System.out.println("accumulated " + ct.NAME + ": " + contentHandler.getCount(ct));
         }
     }
@@ -175,5 +175,13 @@ public class WebScraper implements Serializable {
 
     public synchronized Set<String> addContent(ContentType gc, String html) {
         return contentHandler.getContent(gc, html);
+    }
+
+    @Override
+    public void close() throws IOException {
+        if(optionHandler.isTrue(DEBUG_MODE)) printFinished();
+        if(optionHandler.isTrue(SAVE_LINKS)) saveLinks();
+        if(optionHandler.isTrue(SAVE_CONTENT)) saveAllContent();
+        closed = true;
     }
 }
