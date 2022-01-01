@@ -1,6 +1,9 @@
 package carlos.webcrawler;
 
 import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
 import java.util.*;
@@ -11,25 +14,27 @@ import static carlos.webcrawler.Options.*;
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.newSetFromMap;
 
-public class WebScraper implements Serializable, AutoCloseable {
+public class WebScraper implements Serializable {
     @Serial
     private static final long serialVersionUID = 5440710515833287425L;
+    static int ID;
     private final Set<String> visitedLinks;
     private final Queue<String> unvisitedLinks;
-    private final String LINK_PREFIX;
     private final OptionHandler<?> optionHandler;
     private final ContentHandler contentHandler;
     private transient ThreadPoolHandler threadPoolHandler;
-    private boolean closed = false;
+    private static final int LINK_CACHE_LIMIT = 1_000_000, DATA_CACHE_LIMIT = 5_000_000;
 
 
-    WebScraper(String linkPrefix, OptionHandler<?> optionHandler, ContentHandler contentHandler, ThreadPoolHandler threadPoolHandler) {
-        this.LINK_PREFIX = linkPrefix;
+    WebScraper(OptionHandler<?> optionHandler, ContentHandler contentHandler, ThreadPoolHandler threadPoolHandler) {
         this.optionHandler = optionHandler;
         this.contentHandler = contentHandler;
         this.threadPoolHandler = threadPoolHandler;
         visitedLinks = newSetFromMap(new ConcurrentHashMap<>());
         unvisitedLinks = new ConcurrentLinkedQueue<>();
+        ++ID;
+        if(optionHandler.isTrue(RESTRICT_LANGUAGE))
+            contentHandler.regionLockLinks();
     }
 
     @Serial
@@ -46,12 +51,12 @@ public class WebScraper implements Serializable, AutoCloseable {
         threadPoolHandler.setTask(this::main).start();
     }
 
-    public boolean isFinished () {
-        return closed;
+    public boolean isRunning() {
+        return !threadPoolHandler.allTerminated();
     }
 
     public WebScraper startFrom(String startURL) {
-        addUnvisitedLinksToQueue(visitAndRetrieveHTML(startURL));
+        addUnvisitedLinksToQueue(visitAndRetrieveHTML(startURL), startURL);
         threadPoolHandler.setTask(this::main).start();
         return this;
     }
@@ -61,48 +66,58 @@ public class WebScraper implements Serializable, AutoCloseable {
             contentHandler.saveContent(ct);
     }
 
-    public Path getSavedContent(ContentType ct) {
-        return contentHandler.getContentPath(ct);
+    public Path getSavedContentPath(ContentType ct) {
+        if(isRunning()) throw new CurrentlyRunningException();
+        return ct.getPath();
     }
 
     private synchronized void flushContent() {
-        for (var ct : contentHandler.getTypes()) {
-            if (ct.getCollected() >= 1000000) {
-                try {
-                    saveAndClear(ct);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+        for (var ct : contentHandler.getTypes())
+            if (ct.getData().size() >= DATA_CACHE_LIMIT)
+                saveAndClear(ct);
+    }
+
+    private synchronized void saveAndClear(ContentType ct) {
+        try {
+            contentHandler.saveContent(ct);
+            ct.clearData();
+        } catch(IOException e) {
+            e.printStackTrace();
         }
     }
 
-    private synchronized void saveAndClear(ContentType ct) throws IOException {
-        contentHandler.saveContent(ct);
-        ct.clearData();
-    }
-
     private void saveLinks() throws IOException {
-        contentHandler.saveContent(visitedLinks, contentHandler.getLink());
-        contentHandler.saveContent(unvisitedLinks, contentHandler.getLink());
+        contentHandler.saveLinks(visitedLinks);
+        contentHandler.saveLinks(unvisitedLinks);
     }
 
     private void printFinished() {
         System.out.println("--------------");
-        System.out.println(" FINISHED! :D");
+        System.out.println(this + " FINISHED!");
         System.out.println("--------------");
     }
 
     private void main() {
         while (optionHandler.isTrue(UNLIMITED) || contentHandler.notAllAreCollected()) {
-            String html = visitAndRetrieveHTML(LINK_PREFIX + nextLink());
-            addUnvisitedLinksToQueue(html);
+            var link = nextLink();
+            String html = visitAndRetrieveHTML(link);
+            if(unvisitedLinks.size() < LINK_CACHE_LIMIT)
+                tryToAddNewLinks(link, html);
             for(var ct : contentHandler.getTypes()) {
                 addContentDataAndUpdateCount(html, ct);
                 printDebugMain(ct);
             }
             if (threadPoolHandler.shouldStop())
                 break;
+        }
+        if(threadPoolHandler.isLastThread()) close();
+    }
+
+    private void tryToAddNewLinks(String link, String html) {
+        try {
+            addUnvisitedLinksToQueue(html, link);
+        } catch(PageWithoutLinksException e) {
+            if(optionHandler.isTrue(DEBUG_MODE)) System.err.println(e.getMessage());
         }
     }
 
@@ -121,16 +136,17 @@ public class WebScraper implements Serializable, AutoCloseable {
 
     private synchronized String nextLink() {
         if(unvisitedLinks.isEmpty())
-            throw new IllegalStateException("Reached end!");
+            throw new IllegalStateException("Reached end!" + "(" + this + ")");
         var link = unvisitedLinks.poll();
         visitedLinks.add(link);
         printDebugRL();
         return link;
     }
 
-    private synchronized void addUnvisitedLinksToQueue(String html) {
-        contentHandler.getLinks(html).stream()
-                .filter(s -> !visitedLinks.contains(s))
+    private synchronized void addUnvisitedLinksToQueue(String html, String url) {
+        var links = contentHandler.getLinks(html);
+        if (links.isEmpty()) throw new PageWithoutLinksException(url);
+        links.stream().filter(s -> !visitedLinks.contains(s))
                 .forEach(unvisitedLinks::add);
     }
 
@@ -144,12 +160,14 @@ public class WebScraper implements Serializable, AutoCloseable {
     private String visitAndRetrieveHTML(String url) {
         debugGetHTML(url);
         var sb = new StringBuilder();
-        try (var reader = new BufferedInputStream(new URL(url).openStream())){
+        try (var reader = new BufferedInputStream(new URI(url).toURL().openStream())){
             int b;
             while((b = reader.read()) != -1)
                 sb.append((char) b);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException | URISyntaxException e) {
+            System.err.println(e.getMessage());
+            if(optionHandler.isTrue(DEBUG_MODE))System.err.println("Couldnt visit page:" + url);
+            visitAndRetrieveHTML(nextLink());
         }
         return sb.toString();
     }
@@ -163,11 +181,44 @@ public class WebScraper implements Serializable, AutoCloseable {
         return contentHandler.getContent(gc, html);
     }
 
+    public void close() {
+        try {
+            if(optionHandler.isTrue(DEBUG_MODE)) printFinished();
+            if(optionHandler.isTrue(SAVE_LINKS)) saveLinks();
+            if(optionHandler.isTrue(SAVE_CONTENT)) saveAllContent();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
-    public void close() throws IOException {
-        if(optionHandler.isTrue(DEBUG_MODE)) printFinished();
-        if(optionHandler.isTrue(SAVE_LINKS)) saveLinks();
-        if(optionHandler.isTrue(SAVE_CONTENT)) saveAllContent();
-        closed = true;
+    public String toString() {
+        return "WebScraper::" + ID;
+    }
+
+    public class CurrentlyRunningException extends RuntimeException{
+        @Serial
+        private static final long serialVersionUID = -822557266581802173L;
+
+        @Override
+        public String getMessage() {
+            return WebScraper.this + " is currently running!";
+        }
+    }
+
+    private final class PageWithoutLinksException extends RuntimeException {
+
+        @Serial
+        private static final long serialVersionUID = 7244117343903569290L;
+        private final String link;
+
+        PageWithoutLinksException(String link) {
+            this.link = link;
+        }
+
+        @Override
+        public String getMessage() {
+            return WebScraper.this + " page has no identifiable links! " + " --LINK TO PAGE -> " + link;
+        }
     }
 }

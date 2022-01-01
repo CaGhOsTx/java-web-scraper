@@ -3,45 +3,47 @@ import java.util.Arrays;
 
 public class ThreadPoolHandler {
     Thread[] threadPool;
-    boolean stop = false;
-    Runnable task;
+    volatile boolean stop = false;
+    Runnable startTask;
     ThreadPoolHandler (int n) {
         threadPool = new Thread[n];
     }
 
-    ThreadPoolHandler setTask(Runnable task) {
-        this.task = task;
+    ThreadPoolHandler setTask(Runnable startTask) {
+        this.startTask = startTask;
         return this;
     }
 
-    synchronized void close() {
+    void close() {
         stop = true;
-        while(!allTerminated()) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
-    void start() {
+    private boolean hasATask() {
+        return startTask != null;
+    }
+
+    synchronized void start() {
+        if(!hasATask()) throw new IllegalStateException("Tasks are not set");
         stop = false;
         for (int i = 0; i < threadPool.length; i++) {
-            threadPool[i] = new Thread(task);
+            threadPool[i] = new Thread(startTask);
             threadPool[i].start();
         }
     }
 
-    boolean allTerminated() {
-        return Arrays.stream(threadPool).noneMatch(Thread::isAlive);
+    synchronized boolean allTerminated() {
+        return hasATask() && Arrays.stream(threadPool).noneMatch(Thread::isAlive);
     }
 
-    synchronized int size() {
+    int size() {
         return threadPool.length;
     }
 
     public boolean shouldStop() {
         return stop;
+    }
+
+    public synchronized boolean isLastThread() {
+        return Arrays.stream(threadPool).filter(Thread::isAlive).count() == 1;
     }
 }

@@ -2,19 +2,17 @@ package carlos.webcrawler;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 public class ContentHandler implements Serializable {
     @Serial
     private static final long serialVersionUID = 395515185246116492L;
-    private final ContentType link;
+
+    private final Link link = new Link("link");
     private final List<ContentType> types;
 
-    public ContentHandler(ContentType link, ContentType... otherContent) {
-        this.link = link;
+    public ContentHandler(ContentType... otherContent) {
         types = Arrays.stream(otherContent).toList();
     }
     
@@ -22,14 +20,8 @@ public class ContentHandler implements Serializable {
         return getContent(getLink(), html);
     }
 
-    @Serial
-    private void writeObject(ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
-    }
-
-    @Serial
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
+    void regionLockLinks() {
+        link.regionLock();
     }
     
     Set<String> getContent(ContentType ct, String html) {
@@ -43,19 +35,18 @@ public class ContentHandler implements Serializable {
         return content;
     }
 
-    void saveContent(ContentType ct) throws IOException {
-        var option = setOption(ct);
-        try (var w = Files.newBufferedWriter(getContentPath(ct), option)) {
-            for (var data : ct.getData()) {
+    void saveContent(ContentType content) throws IOException {
+        var option = getOption(content);
+        try (var w = Files.newBufferedWriter(content.getPath(), option)) {
+            for (var data : content.getData()) {
                 w.write(data);
                 w.newLine();
             }
         }
     }
 
-    void saveContent(Collection<?> data, ContentType ct) throws IOException {
-        var option = setOption(ct);
-        try (var w = Files.newBufferedWriter(getContentPath(ct), option)) {
+    void saveLinks(Collection<?> data) throws IOException {
+        try (var w = Files.newBufferedWriter(link.getPath(), getOption(link))) {
             for (var d : data) {
                 w.write(d.toString());
                 w.newLine();
@@ -63,12 +54,8 @@ public class ContentHandler implements Serializable {
         }
     }
 
-    Path getContentPath(ContentType ct) {
-        return Paths.get(ct.getClass() + "@" + ct.hashCode() + "::" + ct.NAME + ".txt");
-    }
-
-    private StandardOpenOption setOption(ContentType ct) {
-        if (Files.exists(getContentPath(ct)))
+    private StandardOpenOption getOption(ContentType ct) {
+        if (Files.exists(ct.getPath()))
             return StandardOpenOption.APPEND;
         return StandardOpenOption.CREATE;
     }

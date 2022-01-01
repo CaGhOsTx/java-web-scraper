@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -17,38 +18,45 @@ import static java.nio.file.StandardOpenOption.CREATE;
 
 public class HashComparator {
     private int max = 0;
-    private final Path p;
+    private final Path source;
     private final Path result = Paths.get("result.txt");
 
-    public HashComparator(Path p) {
-        this.p = p;
+    public HashComparator(Path source) {
+        this.source = source;
     }
 
     public void start() throws IOException {
-        List<String> a = List.of(""), b = List.of("");
-        var br = Files.lines(p).limit(10_000);
-        int i = 0, j = 0;
-        while(!a.isEmpty()) {
-            br = Files.lines(p).limit(10_000).skip(i);
-            a = br.toList();
-            printCompareSingle(i, a.size());
-            i += a.size();
+        int cacheLimit = 10_000;
+        List<String> a = new ArrayList<>(cacheLimit), b = new ArrayList<>(cacheLimit);
+        for(int i = 0; max < 64; i += a.size(), a.clear()) {
+            addLinesToList(source, i, cacheLimit, a);
+            if(a.isEmpty()) break;
+            printCompareSingle(i, i + a.size());
             compareHashes(a);
-            while(!b.isEmpty()) {
-                br = Files.lines(p).limit(10_000).skip(i + j);
-                b = br.toList();
-                printCompareSingle(i + j, i + j + b.size());
-                j += b.size();
-                compareHashes(b);
-                System.out.println("Comparing both");
-                compareHashes(a,b);
-            }
+            compareBothLists(cacheLimit, a, b, i);
         }
         System.out.println("Finished!");
     }
 
+    private void compareBothLists(int cacheLimit, List<String> a, List<String> b, int i) throws IOException {
+        for(int j = i + a.size(); max < 64; j += b.size(), b.clear()) {
+            addLinesToList(source, j, cacheLimit, b);
+            if(b.isEmpty()) break;
+            printCompareDouble(i, i + a.size(), j, j + b.size());
+            compareHashes(a, b);
+        }
+    }
+
+    private void addLinesToList(Path p, int j, int cacheLimit, List<String> b) throws IOException {
+        Files.lines(p).skip(j).limit(cacheLimit).forEach(b::add);
+    }
+
     private void printCompareSingle(int i, int j) {
         System.out.println("Comparing range " + i + "-" + j);
+    }
+
+    private void printCompareDouble(int i1, int i2, int j1, int j2) {
+        System.out.println("Comparing range " + i1 + "-" + i2 + " and " + j1 + "-" + j2);
     }
 
     public static String sha256(String input) {
@@ -77,6 +85,7 @@ public class HashComparator {
     private void compareAndUpdate(BufferedWriter w, List<String> first, int i, int j) {
         String a = first.get(i), aHash = sha256(a), b = first.get(j), bHash = sha256(b);
         int count = count(aHash, bHash);
+        if(count == 64 && a.equals(b)) return;
         if (count >= max) {
             max = writeToConsoleAndUpdate(a, b, count);
             writeToFile(w, a, b);
@@ -86,6 +95,7 @@ public class HashComparator {
     private void compareAndUpdate(BufferedWriter w, List<String> first, List<String> second, int i, int j) {
         String a = first.get(i), aHash = sha256(a), b = second.get(j), bHash = sha256(b);
         int count = count(aHash, bHash);
+        if(count == 64 && a.equals(b)) return;
         if (count >= max) {
             max = writeToConsoleAndUpdate(a, b, count);
             writeToFile(w, a, b);
