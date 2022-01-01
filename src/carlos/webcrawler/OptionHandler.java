@@ -3,21 +3,21 @@ package carlos.webcrawler;
 import java.io.*;
 import java.util.List;
 
-public final class OptionHandler<T extends Options> implements Serializable {
+public final class OptionHandler implements Serializable {
     @Serial
     private static final long serialVersionUID = -7870065255227151797L;
-    static OptionHandler<?> EMPTY = new OptionHandler<>();
+    static OptionHandler EMPTY = new OptionHandler();
     int[] res;
 
     private OptionHandler() {
         res = new int[1];
     }
 
-    public OptionHandler(List<T> options) {
+    public OptionHandler(List<Options> options) {
         res = getOptionsAsInt(options);
     }
 
-    int[] getOptionsAsInt(List<T> setOptions) {
+    int[] getOptionsAsInt(List<Options> setOptions) {
         int[] options = new int[Options.values().length / 32 + 1];
         for (var o : setOptions) {
             options[getIndex(o.position)] |= (1 << o.position);

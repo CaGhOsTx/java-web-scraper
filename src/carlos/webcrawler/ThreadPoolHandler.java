@@ -1,9 +1,11 @@
 package carlos.webcrawler;
 import java.util.Arrays;
 
-public class ThreadPoolHandler {
+import static java.util.Arrays.stream;
+
+public final class ThreadPoolHandler {
     Thread[] threadPool;
-    volatile boolean stop = false;
+    boolean stop = false;
     Runnable startTask;
     ThreadPoolHandler (int n) {
         threadPool = new Thread[n];
@@ -32,7 +34,7 @@ public class ThreadPoolHandler {
     }
 
     synchronized boolean allTerminated() {
-        return hasATask() && Arrays.stream(threadPool).noneMatch(Thread::isAlive);
+        return hasATask() && stream(threadPool).noneMatch(Thread::isAlive);
     }
 
     int size() {
@@ -44,6 +46,6 @@ public class ThreadPoolHandler {
     }
 
     public synchronized boolean isLastThread() {
-        return Arrays.stream(threadPool).filter(Thread::isAlive).count() == 1;
+        return stream(threadPool).filter(Thread::isAlive).count() == 1;
     }
 }

@@ -4,10 +4,12 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static java.util.Collections.newSetFromMap;
 
 public abstract class ContentType implements Serializable {
     @Serial
@@ -15,7 +17,7 @@ public abstract class ContentType implements Serializable {
     final String NAME;
     private final Pattern PATTERN;
     int collected = 0;
-    private Set<String> data = new HashSet<>();
+    private Set<String> data = newSetFromMap(new ConcurrentHashMap<>());
     
     public ContentType(String NAME) {
         this.NAME = NAME;
@@ -24,10 +26,9 @@ public abstract class ContentType implements Serializable {
     public abstract String pattern();
     public abstract String transform(String html);
     public abstract boolean onAddFilter(String s);
-    public abstract int limit();
 
-    public boolean reachedLimit() {
-        return collected >= limit();
+    public boolean reachedLimit(int limit) {
+        return collected >= limit;
     }
 
     public Pattern getPATTERN() {
@@ -46,20 +47,21 @@ public abstract class ContentType implements Serializable {
         data.clear();
     }
 
-    public synchronized void addData(Set<String> newData) {
+    public synchronized void addData(Set<String> newData, int limit) {
         int previousSize = data.size();
         data.addAll(newData);
-        if(newDataOverflowsLimit())
-            removeExcess();
+        if(newDataOverflowsLimit(limit))
+            removeExcess(limit);
         collected += data.size() - previousSize;
+        System.out.println(Thread.currentThread().getName() + " added " + (data.size() - previousSize) + " -> (" + collected + ")");
     }
 
-    private boolean newDataOverflowsLimit() {
-        return collected + data.size() > limit();
+    private boolean newDataOverflowsLimit(int limit) {
+        return collected + data.size() > limit;
     }
 
-    private void removeExcess() {
-        data = data.stream().limit(limit() - collected).collect(Collectors.toSet());
+    private void removeExcess(int limit) {
+        data = data.stream().limit(limit - collected).collect(Collectors.toSet());
     }
 
     public synchronized int getCollected() {

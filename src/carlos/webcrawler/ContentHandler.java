@@ -5,23 +5,23 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 
+import static java.nio.file.Files.exists;
+import static java.nio.file.Files.newBufferedWriter;
+
 public class ContentHandler implements Serializable {
     @Serial
     private static final long serialVersionUID = 395515185246116492L;
 
-    private final Link link = new Link("link");
+    private ContentType link;
     private final List<ContentType> types;
 
     public ContentHandler(ContentType... otherContent) {
         types = Arrays.stream(otherContent).toList();
+        link = LinkType.STANDARD;
     }
     
     Set<String> getLinks(String html) {
         return getContent(getLink(), html);
-    }
-
-    void regionLockLinks() {
-        link.regionLock();
     }
     
     Set<String> getContent(ContentType ct, String html) {
@@ -35,18 +35,20 @@ public class ContentHandler implements Serializable {
         return content;
     }
 
-    void saveContent(ContentType content) throws IOException {
-        var option = getOption(content);
-        try (var w = Files.newBufferedWriter(content.getPath(), option)) {
-            for (var data : content.getData()) {
-                w.write(data);
-                w.newLine();
+    synchronized static void saveContent(ContentType content) throws IOException {
+        if(content.getData().size() > 0) {
+            var option = getOption(content);
+            try (var w = newBufferedWriter(content.getPath(), option)) {
+                for (var data : content.getData()) {
+                    w.write(data);
+                    w.newLine();
+                }
             }
         }
     }
 
-    void saveLinks(Collection<?> data) throws IOException {
-        try (var w = Files.newBufferedWriter(link.getPath(), getOption(link))) {
+    synchronized void saveLinks(Collection<?> data) throws IOException {
+        try (var w = newBufferedWriter(link.getPath(), getOption(link))) {
             for (var d : data) {
                 w.write(d.toString());
                 w.newLine();
@@ -54,8 +56,8 @@ public class ContentHandler implements Serializable {
         }
     }
 
-    private StandardOpenOption getOption(ContentType ct) {
-        if (Files.exists(ct.getPath()))
+    private static StandardOpenOption getOption(ContentType ct) {
+        if (exists(ct.getPath()))
             return StandardOpenOption.APPEND;
         return StandardOpenOption.CREATE;
     }
@@ -68,11 +70,15 @@ public class ContentHandler implements Serializable {
         return types;
     }
 
-    boolean notAllAreCollected() {
-        return !types.stream().allMatch(ContentType::reachedLimit);
+    boolean notAllAreCollected(int limit) {
+        return !types.stream().allMatch(ct -> ct.reachedLimit(limit));
     }
 
     public int getCount(ContentType ct) {
         return ct.getCollected();
+    }
+
+    public void setCustomLinkRegex(String customLinkRegex) {
+        link = new LinkType(customLinkRegex);
     }
 }

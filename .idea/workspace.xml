@@ -4,14 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a2b93da5-f13f-4b8a-a660-d86e511bfdca" name="Changes" comment="Added serialization support.">
-      <change afterPath="$PROJECT_DIR$/src/carlos/webcrawler/Link.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+    <list default="true" id="a2b93da5-f13f-4b8a-a660-d86e511bfdca" name="Changes" comment="...">
+      <change afterPath="$PROJECT_DIR$/src/carlos/webcrawler/LinkType.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/carlos/webcrawler/StandardContentType.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/ContentHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/ContentHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/ContentType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/ContentType.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/HashComparator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/HashComparator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/Link.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/OptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/OptionHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/Options.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/Options.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/ThreadPoolHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/ThreadPoolHandler.java" afterDir="false" />
@@ -26,9 +26,9 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Enum" />
         <option value="Interface" />
         <option value="Class" />
+        <option value="Enum" />
       </list>
     </option>
   </component>
@@ -108,6 +108,7 @@
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
@@ -120,7 +121,7 @@
     <property name="project.structure.last.edited" value="SDKs" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
-    <property name="settings.editor.selected.configurable" value="preferences.intentionPowerPack" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="RecentsManager">
     <key name="CreateClassDialog.RecentsKey">
@@ -174,6 +175,14 @@
       <workItem from="1640885050411" duration="33507000" />
       <workItem from="1640974044280" duration="5137000" />
     </task>
+    <task id="LOCAL-00001" summary="...">
+      <created>1641012272912</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1641012272912</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -189,6 +198,10 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="..." />
+    <option name="LAST_COMMIT_MESSAGE" value="..." />
   </component>
   <component name="XDebuggerManager">
     <pin-to-top-manager>
