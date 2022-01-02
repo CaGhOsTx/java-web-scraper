@@ -12,34 +12,30 @@ public class Main {
     public static void main(String[] args) {
         int dataLimit = 10_000_000;
         WebScraper fandom = new WebScraperBuilder(TEXT)
-                .withOptions(SAVE_CONTENT)
+                .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
-                .withThreadPoolSize(6).build().startFrom("https://www.fandom.com/");
+                .withThreadPoolSize(4).build().startFrom("https://www.fandom.com/");
         WebScraper irishTimes = new WebScraperBuilder(TEXT)
-                .withOptions(SAVE_CONTENT)
+                .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
                 .withThreadPoolSize(6).build().startFrom("https://www.irishtimes.com/");
         WebScraper wikipedia = new WebScraperBuilder(TEXT)
-                .withOptions(SAVE_CONTENT)
+                .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
-                .withCustomLinkRegex("\"(?<=href=\")https?:en.//[A-Za-z0-9.%/:-]+?(?=\")\"")
-                .withThreadPoolSize(8).build().startFrom("https://en.wikipedia.org/wiki/Main_Page");
+                .withCustomLinkRegex("(?<=href=\")https?://en\\.wiki[A-Za-z0-9./:_()\\[\\]{}-]+?(?=\")")
+                .withThreadPoolSize(6).build().startFrom("https://en.wikipedia.org/wiki/Main_Page");
         WebScraper reddit = new WebScraperBuilder(TEXT)
-                .withOptions(SAVE_CONTENT)
+                .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
-                .withThreadPoolSize(24).build().startFrom("https://www.reddit.com/");
+                .withThreadPoolSize(6).build().startFrom("https://www.reddit.com/");
         WebScraper boards = new WebScraperBuilder(TEXT)
-                .withOptions(SAVE_CONTENT)
+                .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
                 .withThreadPoolSize(4).build().startFrom("https://www.boards.ie/");
         WebScraper youtube = new WebScraperBuilder(TEXT)
-                .withOptions(SAVE_CONTENT)
-                .withDataLimit(dataLimit)
-                .withThreadPoolSize(24).build().startFrom("https://www.youtube.com/");
-        WebScraper quora = new WebScraperBuilder(TEXT)
                 .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
-                .withThreadPoolSize(12).build().startFrom("https://www.quora.com/");
+                .withThreadPoolSize(6).build().startFrom("https://www.youtube.com/");
         Scanner sc = new Scanner(System.in);
         var stop = "";
         do {
@@ -52,7 +48,6 @@ public class Main {
             reddit.stop();
             boards.stop();
             youtube.stop();
-            quora.stop();
         }
         //Path path = Paths.get("C:\\Users\\carlo\\IdeaProjects\\CS210 Project\\Main$21204256593&text.txt");
         //new HashComparator(path).start();

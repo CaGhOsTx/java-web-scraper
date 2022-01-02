@@ -23,7 +23,7 @@ public final class WebScraper implements Serializable {
     private final ContentHandler contentHandler;
     private transient ThreadPoolHandler threadPoolHandler;
     int dataLimit;
-    private static final int LINK_CACHE_LIMIT = 1_000_000, DATA_CACHE_LIMIT = 100_000;
+    private static final int LINK_CACHE_LIMIT = 1_000_000, DATA_CACHE_LIMIT = 500_000;
 
 
     WebScraper(OptionHandler optionHandler, ContentHandler contentHandler, ThreadPoolHandler threadPoolHandler, int limit) {
@@ -53,10 +53,10 @@ public final class WebScraper implements Serializable {
     public WebScraper startFrom(String startURL) {
         try {
             addUnvisitedLinksToQueue(visitAndRetrieveHTML(startURL), startURL);
+            threadPoolHandler.setTask(this::main).start();
         } catch(PageWithoutLinksException e) {
             System.err.println("UNABLE TO START " + this);
         }
-        threadPoolHandler.setTask(this::main).start();
         return this;
     }
 
@@ -175,9 +175,9 @@ public final class WebScraper implements Serializable {
     }
 
     private void ifTooManyRequestsErrorSleep(Exception e) {
-        if(e.getMessage().contains("429")) {
+        if(e.getMessage().contains(" 429 ")) {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(30000);
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }

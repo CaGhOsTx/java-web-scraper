@@ -10,7 +10,7 @@ public class LinkType extends ContentType{
 
     private LinkType () {
         super("link");
-        this.regex = "(?<=href=\")https?://[A-Za-z0-9.%/:-]+?(?=\")";
+        this.regex = "(?<=href=\")https?://[A-Za-z0-9./:_()\\[\\]{}-]+?(?=\")";
     }
 
     LinkType (String regex) {

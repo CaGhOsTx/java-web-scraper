@@ -15,13 +15,11 @@ public abstract class ContentType implements Serializable {
     @Serial
     private static final long serialVersionUID = -2044228837718462802L;
     final String NAME;
-    private final Pattern PATTERN;
     int collected = 0;
     private Set<String> data = newSetFromMap(new ConcurrentHashMap<>());
     
     public ContentType(String NAME) {
         this.NAME = NAME;
-        this.PATTERN = Pattern.compile(pattern());
     }
     public abstract String pattern();
     public abstract String transform(String html);
@@ -32,7 +30,7 @@ public abstract class ContentType implements Serializable {
     }
 
     public Pattern getPATTERN() {
-        return PATTERN;
+        return Pattern.compile(pattern());
     }
 
     public Path getPath() {
@@ -53,7 +51,6 @@ public abstract class ContentType implements Serializable {
         if(newDataOverflowsLimit(limit))
             removeExcess(limit);
         collected += data.size() - previousSize;
-        System.out.println(Thread.currentThread().getName() + " added " + (data.size() - previousSize) + " -> (" + collected + ")");
     }
 
     private boolean newDataOverflowsLimit(int limit) {

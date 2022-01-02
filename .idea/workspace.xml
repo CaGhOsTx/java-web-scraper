@@ -5,18 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a2b93da5-f13f-4b8a-a660-d86e511bfdca" name="Changes" comment="...">
-      <change afterPath="$PROJECT_DIR$/src/carlos/webcrawler/LinkType.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/carlos/webcrawler/StandardContentType.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/ContentHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/ContentHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/ContentType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/ContentType.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/Link.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/OptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/OptionHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/Options.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/Options.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/ThreadPoolHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/ThreadPoolHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/LinkType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/LinkType.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/WebScraper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/WebScraper.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webcrawler/WebScraperBuilder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webcrawler/WebScraperBuilder.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
