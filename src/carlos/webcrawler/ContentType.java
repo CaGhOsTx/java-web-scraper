@@ -63,11 +63,11 @@ public abstract class ContentType implements Serializable, ContentRequirements {
         data = data.stream().limit(limit - collected).collect(Collectors.toSet());
     }
 
-    public synchronized int getCollected() {
+    public synchronized int getTotal() {
         return collected;
     }
 
     public String toString() {
-        return "ContentType-" + NAME;
+        return NAME;
     }
 }

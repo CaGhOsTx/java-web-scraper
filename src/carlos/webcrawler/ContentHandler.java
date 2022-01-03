@@ -1,9 +1,10 @@
 package carlos.webcrawler;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Serial;
+import java.io.Serializable;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static carlos.webcrawler.StandardContentType.LINK;
 import static java.nio.file.Files.exists;
@@ -34,7 +35,13 @@ public class ContentHandler implements Serializable {
         };
     }
 
-    public void addData(ContentType ct, String html) {}
+    public void addData(ContentType ct, Set<String> newData, int limit) {
+        types.put(ct, types.get(ct) + ct.addData(newData, limit));
+    }
+
+    public int getContributed(ContentType content) {
+        return types.get(content);
+    }
 
     Set<String> getLinks(String html) {
         return getContent(getLink(), html);
@@ -82,11 +89,11 @@ public class ContentHandler implements Serializable {
         return link;
     }
 
-    List<ContentType> getTypes() {
-        return types;
+    Set<ContentType> getContentTypes() {
+        return types.keySet();
     }
 
     boolean notAllAreCollected(int limit) {
-        return !types.stream().allMatch(content -> content.reachedLimit(limit));
+        return !types.keySet().stream().allMatch(content -> content.reachedLimit(limit));
     }
 }

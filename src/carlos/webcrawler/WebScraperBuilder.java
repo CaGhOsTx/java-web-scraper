@@ -17,6 +17,10 @@ public final class WebScraperBuilder {
         this.contentHandler = new ContentHandler(customContent);
     }
 
+    public static WebScraper deserialize(String startURL) {
+        return new WebScraper(startURL);
+    }
+
     public WebScraperBuilder(String startURL, StandardContentType... content) {
         this.startURL = startURL;
         this.contentHandler = new ContentHandler(Arrays.stream(content)

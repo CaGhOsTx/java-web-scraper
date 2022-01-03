@@ -6,8 +6,7 @@ public enum Options {
     SAVE_CONTENT(2),
     UNLIMITED(3),
     RESTRICT_LANGUAGE(4),
-    SERIALIZE_ON_CLOSE(5),
-    LOAD_SERIALIZED(6);
+    SERIALIZE_ON_CLOSE(5);
 
     public final int position;
 
