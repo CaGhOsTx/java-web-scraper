@@ -68,13 +68,20 @@ public class HashComparator {
         }
         var salt = "CS210+".getBytes(UTF_8);
         Objects.requireNonNull(md).update(salt);
-        var data = md.digest(input.getBytes(UTF_8));
+        var words = md.digest(input.getBytes(UTF_8));
         var sb = new StringBuilder();
-        for (byte datum : data)
-            sb.append(Integer.toString((datum & 0xff) + 0x100, 16).substring(1));
+        for (byte bit : words)
+            sb.append(Integer.toString((bit & 0xff) + 0x100, 16).substring(1));
         return sb.toString();
     }
 
+    //0000000000000000000000000110
+    //0000000000000000000001111111 &  ????? what is the point of modulating/masking a 8 bit word with a 7 bit word?!
+    //----------------------------          (byte) a & 0xff = a
+    //0000000000000000000000000110
+    //0000000000000000000010000000 |
+    //----------------------------
+    //0000000000000000000010000110
     public int count (String a, String b) {
         int count = 0;
         for(int i = 0;i < a.length() && i < b.length(); i++)

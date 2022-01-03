@@ -5,17 +5,20 @@ import java.util.Arrays;
 import static java.util.stream.Collectors.toList;
 
 public final class WebScraperBuilder {
-    String customLinkRegex;
+    private String customLinkRegex;
     private OptionHandler optionHandler = OptionHandler.EMPTY;
     private final ContentHandler contentHandler;
-    private ThreadPoolHandler threadPoolHandler;
+    private threadHandler threadHandler;
+    private final String startURL;
     int limit = 0;
 
-    public WebScraperBuilder(ContentType... customContent) {
+    public WebScraperBuilder(String startURL, ContentType... customContent) {
+        this.startURL = startURL;
         this.contentHandler = new ContentHandler(customContent);
     }
 
-    public WebScraperBuilder(StandardContentType... content) {
+    public WebScraperBuilder(String startURL, StandardContentType... content) {
+        this.startURL = startURL;
         this.contentHandler = new ContentHandler(Arrays.stream(content)
                 .map(StandardContentType::get)
                 .toArray(ContentType[]::new));
@@ -38,16 +41,16 @@ public final class WebScraperBuilder {
     }
 
     public WebScraper build() {
-        if(threadPoolHandler == null)
-            threadPoolHandler = new ThreadPoolHandler(1);
+        if(threadHandler == null)
+            threadHandler = new threadHandler(1);
         if(customLinkRegex != null) {
             contentHandler.setCustomLinkRegex(customLinkRegex);
         }
-        return new WebScraper(optionHandler, contentHandler, threadPoolHandler, limit);
+        return new WebScraper(startURL, optionHandler, contentHandler, threadHandler, limit);
     }
 
     public WebScraperBuilder withThreadPoolSize(int nThreads) {
-        threadPoolHandler = new ThreadPoolHandler(nThreads);
+        threadHandler = new threadHandler(nThreads);
         return this;
     }
 }

@@ -11,31 +11,31 @@ public class Main {
 
     public static void main(String[] args) {
         int dataLimit = 10_000_000;
-        WebScraper fandom = new WebScraperBuilder(TEXT)
+        WebScraper fandom = new WebScraperBuilder("https://www.fandom.com/", TEXT)
                 .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
-                .withThreadPoolSize(4).build().startFrom("https://www.fandom.com/");
-        WebScraper irishTimes = new WebScraperBuilder(TEXT)
+                .withThreadPoolSize(4).build().start();
+        WebScraper irishTimes = new WebScraperBuilder("https://www.irishtimes.com/", TEXT)
                 .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
-                .withThreadPoolSize(6).build().startFrom("https://www.irishtimes.com/");
-        WebScraper wikipedia = new WebScraperBuilder(TEXT)
+                .withThreadPoolSize(6).build().start();
+        WebScraper wikipedia = new WebScraperBuilder("https://en.wikipedia.org/wiki/Main_Page", TEXT)
                 .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
                 .withCustomLinkRegex("(?<=href=\")https?://en\\.wiki[A-Za-z0-9./:_()\\[\\]{}-]+?(?=\")")
-                .withThreadPoolSize(6).build().startFrom("https://en.wikipedia.org/wiki/Main_Page");
-        WebScraper reddit = new WebScraperBuilder(TEXT)
+                .withThreadPoolSize(6).build().start();
+        WebScraper reddit = new WebScraperBuilder("https://www.reddit.com/", TEXT)
                 .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
-                .withThreadPoolSize(6).build().startFrom("https://www.reddit.com/");
-        WebScraper boards = new WebScraperBuilder(TEXT)
+                .withThreadPoolSize(6).build().start();
+        WebScraper boards = new WebScraperBuilder("https://www.boards.ie/", TEXT)
                 .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
-                .withThreadPoolSize(4).build().startFrom("https://www.boards.ie/");
-        WebScraper youtube = new WebScraperBuilder(TEXT)
+                .withThreadPoolSize(4).build().start();
+        WebScraper youtube = new WebScraperBuilder("https://www.youtube.com/", TEXT)
                 .withOptions(SAVE_CONTENT, DEBUG_MODE)
                 .withDataLimit(dataLimit)
-                .withThreadPoolSize(6).build().startFrom("https://www.youtube.com/");
+                .withThreadPoolSize(6).build().start();
         Scanner sc = new Scanner(System.in);
         var stop = "";
         do {

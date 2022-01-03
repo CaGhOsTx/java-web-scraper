@@ -1,40 +1,29 @@
 package carlos.webcrawler;
 
+import carlos.utilities.BitSet;
+
 import java.io.*;
 import java.util.List;
 
-public final class OptionHandler implements Serializable {
+final class OptionHandler implements Serializable {
     @Serial
     private static final long serialVersionUID = -7870065255227151797L;
-    static OptionHandler EMPTY = new OptionHandler();
-    int[] res;
+    static final OptionHandler EMPTY = new OptionHandler();
+    private final BitSet bits;
 
     private OptionHandler() {
-        res = new int[1];
+        bits = BitSet.EMPTY;
     }
 
-    public OptionHandler(List<Options> options) {
-        res = getOptionsAsInt(options);
+    OptionHandler(List<Options> options) {
+        bits = new BitSet(options.stream().map(o -> o.position).toList());
     }
 
-    int[] getOptionsAsInt(List<Options> setOptions) {
-        int[] options = new int[Options.values().length / 32 + 1];
-        for (var o : setOptions) {
-            options[getIndex(o.position)] |= (1 << o.position);
-        }
-        return options;
+    void addOption(Options o) {
+        bits.setBit(o.position);
     }
 
-    private int getIndex(int position) {
-        int index = 0;
-        for(int i = 1; i <= position; i++) {
-            if(i % 32 == 0) index++;
-        }
-        return index;
+    boolean isTrue(Options o) {
+        return bits.isSet(o.position);
     }
-
-    public boolean isTrue(Options o) {
-        return (res[getIndex(o.position)] & (1 << o.position)) != 0;
-    }
-
 }

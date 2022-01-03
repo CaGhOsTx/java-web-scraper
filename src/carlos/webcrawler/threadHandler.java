@@ -1,34 +1,33 @@
 package carlos.webcrawler;
-import java.util.Arrays;
 
 import static java.util.Arrays.stream;
 
-public final class ThreadPoolHandler {
-    Thread[] threadPool;
-    boolean stop = false;
-    Runnable startTask;
-    ThreadPoolHandler (int n) {
+final class threadHandler {
+    private final Thread[] threadPool;
+    private boolean stop = false;
+    private Runnable task;
+    threadHandler(int n) {
         threadPool = new Thread[n];
     }
 
-    ThreadPoolHandler setTask(Runnable startTask) {
-        this.startTask = startTask;
+    threadHandler setTask(Runnable startTask) {
+        this.task = startTask;
         return this;
     }
 
-    void close() {
+    void stop() {
         stop = true;
     }
 
     private boolean hasATask() {
-        return startTask != null;
+        return task != null;
     }
 
     synchronized void start() {
         if(!hasATask()) throw new IllegalStateException("Tasks are not set");
         stop = false;
         for (int i = 0; i < threadPool.length; i++) {
-            threadPool[i] = new Thread(startTask);
+            threadPool[i] = new Thread(task);
             threadPool[i].start();
         }
     }

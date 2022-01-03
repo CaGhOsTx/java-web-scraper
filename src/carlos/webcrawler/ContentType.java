@@ -11,26 +11,26 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.newSetFromMap;
 
-public abstract class ContentType implements Serializable {
+public abstract class ContentType implements Serializable, ContentRequirements {
     @Serial
     private static final long serialVersionUID = -2044228837718462802L;
     final String NAME;
-    int collected = 0;
+    private int collected = 0;
     private Set<String> data = newSetFromMap(new ConcurrentHashMap<>());
+    private final Pattern PATTERN;
     
     public ContentType(String NAME) {
         this.NAME = NAME;
+        PATTERN = Pattern.compile(pattern());
     }
     public abstract String pattern();
-    public abstract String transform(String html);
-    public abstract boolean onAddFilter(String s);
 
     public boolean reachedLimit(int limit) {
         return collected >= limit;
     }
 
     public Pattern getPATTERN() {
-        return Pattern.compile(pattern());
+        return PATTERN;
     }
 
     public Path getPath() {
@@ -45,12 +45,14 @@ public abstract class ContentType implements Serializable {
         data.clear();
     }
 
-    public synchronized void addData(Set<String> newData, int limit) {
+    synchronized int addData(Set<String> newData, int limit) {
         int previousSize = data.size();
         data.addAll(newData);
         if(newDataOverflowsLimit(limit))
             removeExcess(limit);
-        collected += data.size() - previousSize;
+        int difference = data.size() - previousSize;
+        collected += difference;
+        return difference;
     }
 
     private boolean newDataOverflowsLimit(int limit) {

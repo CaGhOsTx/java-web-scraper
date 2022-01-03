@@ -3,6 +3,16 @@ package carlos.webcrawler;
 import java.io.Serial;
 
 public enum StandardContentType {
+    LINK(new ContentType("link") {
+        @Serial
+        private static final long serialVersionUID = -6727177813399172363L;
+
+        @Override
+        public String pattern() {
+            return "(?<=href=\")https?://[A-Za-z0-9./:_()\\[\\]{}-]+?(?=\")";
+        }
+
+    }),
     TEXT(new ContentType("text") {
 
         @Serial
@@ -29,13 +39,13 @@ public enum StandardContentType {
         }
     });
 
-    final ContentType ct;
+    private final ContentType type;
 
-    StandardContentType(ContentType ct) {
-        this.ct = ct;
+    StandardContentType(ContentType type) {
+        this.type = type;
     }
 
     public ContentType get() {
-        return ct;
+        return type;
     }
 }
