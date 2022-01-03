@@ -1,4 +1,4 @@
-package carlos.webcrawler;
+package carlos.webscraper;
 
 import carlos.utilities.BitSet;
 
@@ -15,15 +15,15 @@ final class OptionHandler implements Serializable {
         bits = BitSet.EMPTY;
     }
 
-    OptionHandler(List<Options> options) {
-        bits = new BitSet(options.stream().map(o -> o.position).toList());
+    OptionHandler(List<Option> options) {
+        bits = new BitSet(options.stream().map(Enum::ordinal).toList());
     }
 
-    void addOption(Options o) {
-        bits.setBit(o.position);
+    void addOption(Option o) {
+        bits.setBit(o.ordinal());
     }
 
-    boolean isTrue(Options o) {
-        return bits.isSet(o.position);
+    boolean isTrue(Option o) {
+        return bits.isSet(o.ordinal());
     }
 }

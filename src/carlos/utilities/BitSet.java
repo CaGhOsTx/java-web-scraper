@@ -12,6 +12,8 @@ import java.util.Objects;
  * Combining a BitSet with a constant enumeration whose constants hold a bit position results in a map like structure.
  * @author Carlos Milkovic
  * @version 1.0
+ * @see Serializable
+ * @see Iterable
  */
 @SuppressWarnings("unused")
 public final class BitSet implements Serializable, Iterable<Boolean> {
@@ -34,7 +36,7 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
      * @param size initial size.
      */
     private BitSet(int size) {
-        bits = new byte[(size >>> 3) + 1];
+        bits = new byte[size >>> 3];
     }
 
     /**
@@ -67,7 +69,7 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
      * @see BitSet
      */
     public int size() {
-        return (bits.length << 3) + 1;
+        return (bits.length << 3);
     }
 
     /**
@@ -102,8 +104,8 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
      */
     public BitSet and(BitSet other) {
         Objects.requireNonNull(other);
-        var result = new BitSet(Math.min(bits.length, other.bits.length));
-        for(int i = 0; i < bits.length && i < other.bits.length; i++)
+        var result = new BitSet(Math.min(this.size(), other.size()));
+        for(int i = 0; i < result.bits.length; i++)
             result.bits[i] = (byte) (bits[i] & other.bits[i]);
         return result;
     }
@@ -118,8 +120,8 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
      */
     public BitSet or(BitSet other) {
         Objects.requireNonNull(other);
-        var result = new BitSet(Math.max(bits.length, other.bits.length));
-        for(int i = 0; i < bits.length && i < other.bits.length; i++)
+        var result = new BitSet(Math.max(size(), other.size()));
+        for(int i = 0; i < result.bits.length; i++)
             result.bits[i] = (byte) (bits[i] | other.bits[i]);
         return result;
     }
@@ -134,8 +136,8 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
      */
     public BitSet xor(BitSet other) {
         Objects.requireNonNull(other);
-        var result = new BitSet(Math.max(bits.length, other.bits.length));
-        for(int i = 0; i < bits.length && i < other.bits.length; i++)
+        var result = new BitSet(Math.max(size(), other.size()));
+        for(int i = 0; i < result.bits.length; i++)
             result.bits[i] = (byte) (bits[i] ^ other.bits[i]);
         return result;
     }
@@ -147,8 +149,8 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
      * @see BitSet
      */
     public void resetBit(int b) {
-        int index = getIndex(b);
-        bits[index] &= ~((byte) 1 << (b % 8));
+        outOfBoundsCheck(b);
+        bits[b >>> 3] &= ~((byte) 1 << (b & 7));
         shrinkIfPossible();
     }
 
@@ -159,7 +161,10 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
      * @see BitSet
      */
     public void setBit(int b) {
-        bits[getIndex(b)] |= ((byte) 1 << (b & 0b111));
+        expandBits(b);
+        outOfBoundsCheck(b);
+        // to clarify: a % x == a & (x - 1) ∀x ∈ { log2(x) ∈ Z }
+        bits[b >>> 3] |= ((byte) 1 << (b & 7));
     }
 
     /**
@@ -169,7 +174,11 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
      * @see BitSet
      */
     public void toggleBit(int b) {
-        bits[getIndex(b)] ^= ((byte) 1 << (b & 7));
+        expandBits(b);
+        outOfBoundsCheck(b);
+        // to clarify: a % x == a & (x - 1) ∀x ∈ { log2(x) ∈ Z }
+        bits[b >>> 3] ^= ((byte) 1 << (b & 7));
+        shrinkIfPossible();
     }
 
     /**
@@ -186,15 +195,15 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
 
     /**
      * Tests whether the specified bit is on or off.
-     * @param bit bit to be tested.
+     * @param b bit to be tested.
      * @return true if 1, false if 0
      * @throws IndexOutOfBoundsException if the bit is negative.
      * @see BitSet
      */
-    public boolean isSet(int bit) {
-        int index = getIndex(bit);
-        if(isOutOfBounds(index) && isOutOfBounds(bit)) return false;
-        return (bits[index] & ((byte) 0b1 << (bit & 0b111))) != 0;
+    public boolean isSet(int b) {
+        outOfBoundsCheck(b);
+        // to clarify: a % x == a & (x - 1) ∀x ∈ { log2(x) ∈ Z }
+        return (bits[b >>> 3] & ((byte) 1 << (b & 7))) != 0;
     }
     @Override
     public String toString() {
@@ -263,9 +272,8 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
         return Arrays.copyOfRange(bits, 0, index + 1);
     }
 
-    private boolean isOutOfBounds(int index) {
-        if(index < 0) throw new IndexOutOfBoundsException("Bit positions are always positive! -> " + index);
-        return index >= bits.length;
+    private void outOfBoundsCheck(int bit) {
+        if(bit < 0 || bit >= size()) throw new IndexOutOfBoundsException("Bit is out of bounds! -> " + bit + " for size 0 - " + size());
     }
 
     private void appendIndexes(int binaryLength, int maxDecimalLength, StringBuilder sb) {
@@ -278,14 +286,9 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
             sb.append(String.format("%" + maxDecimalLength + "s", isSet(i) ? 1 : 0));
     }
 
-    private int getIndex(int bit) {
-        int index = 0;
-        for(int i = bit; i > 7; i -= 8) index++;
-        if(isOutOfBounds(index)) expandBits(index);
-        return index;
-    }
-
-    private void expandBits(int index) {
-        bits = Arrays.copyOf(bits, index);
+    private void expandBits(int b) {
+        int index = b >>> 3;
+        if(index >= bits.length)
+            bits = Arrays.copyOf(bits, index + 1);
     }
 }

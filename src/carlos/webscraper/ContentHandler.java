@@ -1,4 +1,4 @@
-package carlos.webcrawler;
+package carlos.webscraper;
 
 import java.io.IOException;
 import java.io.Serial;
@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 
-import static carlos.webcrawler.StandardContentType.LINK;
+import static carlos.webscraper.StandardContentType.LINK;
 import static java.nio.file.Files.exists;
 import static java.nio.file.Files.newBufferedWriter;
 import static java.util.stream.Collectors.toMap;
@@ -23,16 +23,25 @@ public class ContentHandler implements Serializable {
         link = LINK.get();
     }
 
-    public void setCustomLinkRegex(String customLinkRegex) {
+    void restrictLanguage(Language l) {
         link = new ContentType("link") {
             @Serial
             private static final long serialVersionUID = 1513148274869536319L;
 
             @Override
             public String pattern() {
-                return customLinkRegex;
+                return link.pattern();
+            }
+
+            @Override
+            public boolean onAddFilter(String s) {
+                return l.LANG_PATTERN.matcher(s).find();
             }
         };
+    }
+
+    void setCustomLink (ContentType link) {
+        this.link = link;
     }
 
     public void addData(ContentType ct, Set<String> newData, int limit) {
@@ -89,7 +98,10 @@ public class ContentHandler implements Serializable {
         return link;
     }
 
-    Set<ContentType> getContentTypes() {
+    Map<ContentType, Integer> getContentTypeContributions() {
+        return types;
+    }
+    Set<ContentType> getContentTypeSet() {
         return types.keySet();
     }
 

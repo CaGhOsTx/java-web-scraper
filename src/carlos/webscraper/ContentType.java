@@ -1,4 +1,4 @@
-package carlos.webcrawler;
+package carlos.webscraper;
 
 import java.io.Serial;
 import java.io.Serializable;

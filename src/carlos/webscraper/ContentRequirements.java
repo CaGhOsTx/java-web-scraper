@@ -1,4 +1,4 @@
-package carlos.webcrawler;
+package carlos.webscraper;
 
 public interface ContentRequirements {
 

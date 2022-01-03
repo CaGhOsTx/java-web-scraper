@@ -1,4 +1,4 @@
-package carlos.webcrawler;
+package carlos.webscraper;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

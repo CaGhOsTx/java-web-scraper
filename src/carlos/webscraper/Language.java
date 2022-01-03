@@ -1,6 +1,8 @@
-package carlos.webcrawler;
+package carlos.webscraper;
 
-enum Language {
+import java.util.regex.Pattern;
+
+public enum Language {
     ENGLISH("en"),
     CROATIAN("hr"),
     GERMAN("de"),
@@ -12,9 +14,10 @@ enum Language {
     ITALIAN("it"),
     DUTCH("nl");
 
-    final String lang;
+    final Pattern LANG_PATTERN;
 
     Language(String lang) {
-        this.lang = lang;
+        this.LANG_PATTERN = Pattern.compile(String.format("\\.%s|%s\\.|/%s/", lang, lang, lang));
     }
+
 }

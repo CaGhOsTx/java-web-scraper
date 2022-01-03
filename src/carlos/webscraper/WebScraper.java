@@ -1,34 +1,33 @@
-package carlos.webcrawler;
+package carlos.webscraper;
 
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static carlos.webcrawler.ContentHandler.saveContent;
-import static carlos.webcrawler.Options.*;
+import static carlos.webscraper.ContentHandler.saveContent;
+import static carlos.webscraper.Option.*;
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.newSetFromMap;
 
 public final class WebScraper implements Serializable {
     @Serial
     private static final long serialVersionUID = 5440710515833287425L;
-    static int ID;
-    private Set<String> visitedLinks;
-    private Queue<String> unvisitedLinks;
-    private OptionHandler optionHandler;
-    private ContentHandler contentHandler;
+    private static int globalID = 0;
+    private final int id;
+    private final Set<String> visitedLinks;
+    private final Queue<String> unvisitedLinks;
+    private final OptionHandler optionHandler;
+    private final ContentHandler contentHandler;
     private transient threadHandler threadHandler;
-    private String startURL;
-    private int DATA_LIMIT;
+    private final String startURL;
+    private final int DATA_LIMIT;
     private static final int LINK_CACHE_LIMIT = 5_000_000, DATA_CACHE_LIMIT = 1_000_000;
-
-    WebScraper(String startURL) {
-        deserialize(startURL);
-    }
 
     WebScraper(String startURL, OptionHandler optionHandler, ContentHandler contentHandler, threadHandler threadHandler, int limit) {
         this.startURL = startURL;
@@ -37,12 +36,12 @@ public final class WebScraper implements Serializable {
         this.threadHandler = threadHandler;
         visitedLinks = newSetFromMap(new ConcurrentHashMap<>());
         unvisitedLinks = new ConcurrentLinkedQueue<>();
-        ++ID;
+        id = ++globalID;
         DATA_LIMIT = limit;
     }
 
     public WebScraper start() throws IllegalStateException {
-        if(isRunning()) throw new IllegalStateException(this + " is already running!");
+        System.out.println(this + "STARTED");
         try {
             addUnvisitedLinksToQueue(visitAndRetrieveHTML(startURL), startURL);
             threadHandler.setTask(this::main).start();
@@ -59,26 +58,29 @@ public final class WebScraper implements Serializable {
     public void stop() {
         threadHandler.stop();
     }
-    public void close() {
+    public synchronized void close() {
         try {
-            if(optionHandler.isTrue(DEBUG_MODE)) printFinished();
             if(optionHandler.isTrue(SAVE_LINKS)) saveLinks();
             if(optionHandler.isTrue(SAVE_CONTENT)) saveAllContent();
-            if(optionHandler.isTrue(SERIALIZE_ON_CLOSE)) serialize();
+            if(optionHandler.isTrue(SERIALIZE_ON_CLOSE))
+                System.out.println("Scraper serialized... path to object -> " +  serialize());
         } catch (IOException e) {
             e.printStackTrace();
         }
+        printFinished();
+        threadHandler.notifyScraper(this);
     }
 
-    private void deserialize(String startURL) {
+    static WebScraper deserialize(Path path) {
         try {
-            readObject(new ObjectInputStream(new BufferedInputStream(new FileInputStream("WebScraper_from " + startURL))));
+            return  (WebScraper) new ObjectInputStream(new BufferedInputStream(new FileInputStream(path.toFile()))).readObject();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
+        throw new IllegalStateException();
     }
 
-    private void serialize() throws IOException {
+    private Path serialize() throws IOException {
         if(unvisitedLinks.isEmpty() && optionHandler.isTrue(DEBUG_MODE))
             System.err.println("Did not serialize, scraper reached end.");
         else {
@@ -88,18 +90,19 @@ public final class WebScraper implements Serializable {
                 e.printStackTrace();
             }
         }
+        return Path.of("WebScraper_from " + startURL).toAbsolutePath();
     }
 
     @Override
     public String toString() {
-        return "WebScraper::" + ID + " (started from " + startURL + ")";
+        return "WebScraper::" + id + " (started from " + startURL + ")";
     }
 
     @Serial
     private void writeObject(ObjectOutputStream out) throws IOException, InterruptedException {
         threadHandler.stop();
         while(this.isRunning())
-            Thread.sleep(100);
+            this.wait(100);
         out.defaultWriteObject();
         out.writeInt(threadHandler.size());
     }
@@ -112,12 +115,13 @@ public final class WebScraper implements Serializable {
     }
 
     private synchronized void saveAllContent() throws IOException {
-        for(var ct : contentHandler.getContentTypes())
+        for(var ct : contentHandler.getContentTypeSet())
             saveContent(ct);
+        if (optionHandler.isTrue(DEBUG_MODE)) System.out.println("Content saved");
     }
 
     private synchronized void flushContent() {
-        for (var ct : contentHandler.getContentTypes())
+        for (var ct : contentHandler.getContentTypeSet())
             if (ct.getData().size() >= DATA_CACHE_LIMIT)
                 saveAndClear(ct);
     }
@@ -134,11 +138,13 @@ public final class WebScraper implements Serializable {
     private void saveLinks() throws IOException {
         contentHandler.saveLinks(visitedLinks);
         contentHandler.saveLinks(unvisitedLinks);
+        if (optionHandler.isTrue(DEBUG_MODE))
+            System.out.println("Links saved");
     }
 
     private void printFinished() {
         System.out.println("--------------");
-        System.out.println(this + " FINISHED!");
+        System.out.println(this + " FINISHED");
         System.out.println("--------------");
     }
 
@@ -148,15 +154,19 @@ public final class WebScraper implements Serializable {
             String html = visitAndRetrieveHTML(link);
             if(unvisitedLinks.size() < LINK_CACHE_LIMIT)
                 tryToAddNewLinks(link, html);
-            for(var ct : contentHandler.getContentTypes()) {
+            for(var ct : contentHandler.getContentTypeSet()) {
                 addContentDataAndUpdateCount(html, ct);
                 printDebugMain(ct);
             }
             if (threadHandler.shouldStop())
                 break;
         }
-        System.out.println(Thread.currentThread() + " stopping");
+        printDebugClosingThread();
         if(threadHandler.isLastThread()) close();
+    }
+
+    private void printDebugClosingThread() {
+        if(optionHandler.isTrue(DEBUG_MODE)) System.out.println(Thread.currentThread() + " stopping");
     }
 
     private void tryToAddNewLinks(String link, String html) {
@@ -173,6 +183,10 @@ public final class WebScraper implements Serializable {
         flushContent();
     }
 
+    public void addOption(Option option) {
+        optionHandler.addOption(option);
+    }
+
     private void printDebugMain(ContentType ct) {
         if(optionHandler.isTrue(DEBUG_MODE)) {
             System.out.println(currentThread().getName());
@@ -183,7 +197,7 @@ public final class WebScraper implements Serializable {
     private synchronized String nextLink() {
         if(unvisitedLinks.isEmpty()) {
             if(threadHandler.isLastThread()) close();
-            throw new IllegalStateException("Reached end!" + "(" + this + ")");
+            throw new IllegalStateException(Thread.currentThread().getName() + " reached end!" + "(" + this + ")");
         }
         var link = unvisitedLinks.poll();
         visitedLinks.add(link);
@@ -248,18 +262,33 @@ public final class WebScraper implements Serializable {
 
     public String getCollectedInfo() {
         var sb = new StringBuilder();
-        sb.append(this).append('\n').append(" contributed:").append('\n');
-        for(var content : contentHandler.getContentTypes()) {
-            int contributed = contentHandler.getContributed(content);
-            appendCollectionAnalysis(sb, content, contributed);
-        }
+        appendNameAndState(sb);
+        appendContributions(sb);
         return sb.substring(0, sb.length() - 1);
     }
 
+    private void appendNameAndState(StringBuilder sb) {
+        sb.append(this).append('\n')
+                .append("\tstate: ").append(isRunning()? "running" : "not running").append('\n')
+                .append("\tcontributed:").append('\n');
+    }
+
+    private void appendContributions(StringBuilder sb) {
+        for(var content : contentHandler.getContentTypeSet()) {
+            int contributed = contentHandler.getContributed(content);
+            appendCollectionAnalysis(sb, content, contributed);
+        }
+    }
+
+    Map<ContentType, Integer> contributed() {
+        return contentHandler.getContentTypeContributions();
+    }
+
     private void appendCollectionAnalysis(StringBuilder sb, ContentType content, int contributed) {
-        sb.append('\t').append(content).append(": ")
+        int percentage = content.getTotal() == 0 ? 0 : (contributed / content.getTotal()) * 100;
+        sb.append("\t\t").append(content).append(": ")
                 .append(contributed)
-                .append(" (").append((contributed / content.getTotal()) * 100).append("% of total)")
+                .append(" (").append(percentage).append("% of total)")
                 .append('\n');
     }
 

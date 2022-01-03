@@ -1,4 +1,4 @@
-package carlos.webcrawler;
+package carlos.webscraper;
 
 import static java.util.Arrays.stream;
 
@@ -40,11 +40,15 @@ final class threadHandler {
         return threadPool.length;
     }
 
-    public boolean shouldStop() {
+    boolean shouldStop() {
         return stop;
     }
 
-    public synchronized boolean isLastThread() {
+    synchronized boolean isLastThread() {
         return stream(threadPool).filter(Thread::isAlive).count() == 1;
+    }
+
+    synchronized void notifyScraper(WebScraper scraper) {
+        scraper.notifyAll();
     }
 }
