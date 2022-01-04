@@ -6,5 +6,5 @@ public enum Option {
     SAVE_CONTENT,
     UNLIMITED,
     RESTRICT_LANGUAGE,
-    SERIALIZE_ON_CLOSE;
+    SERIALIZE_ON_CLOSE
 }

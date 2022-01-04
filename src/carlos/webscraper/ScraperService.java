@@ -27,6 +27,10 @@ public class ScraperService implements Serializable {
         manager.start();
     }
 
+    public void start() {
+        manager.start();
+    }
+
     public ScraperService(WebScraper... scrapers) {
         this.scrapers = Arrays.stream(scrapers).toList();
         id = ++globalID;
@@ -37,7 +41,6 @@ public class ScraperService implements Serializable {
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
         manager = new Thread(this::control);
-        manager.start();
     }
 
     public static ScraperService deserialize(Path path) {
@@ -85,7 +88,7 @@ public class ScraperService implements Serializable {
             case NAME -> System.out.println(this);
             case HELP -> help();
             case INFO -> info();
-            case START -> start();
+            case START -> startScrapers();
             case STOP -> stop();
             case TIME -> time();
             case SERIALIZE -> System.out.println(serialize());
@@ -108,7 +111,7 @@ public class ScraperService implements Serializable {
                 .forEach(System.out::println);
     }
 
-    private void start() {
+    private void startScrapers() {
         System.out.println("Starting all scrapers...");
         startAll();
         long started = scrapers.stream().filter(WebScraper::isRunning).count();
@@ -117,13 +120,10 @@ public class ScraperService implements Serializable {
 
     private void stop() {
         System.out.println("Stopping all scrapers...");
-        stopAll();
-        while(isRunning()) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        try {
+            stopAll();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         System.out.println("Scraper service finished!");
     }
@@ -132,8 +132,13 @@ public class ScraperService implements Serializable {
         scrapers.forEach(WebScraper::start);
     }
 
-    public void stopAll() {
-        scrapers.forEach(WebScraper::stop);
+    public void stopAll() throws InterruptedException {
+        for (WebScraper scraper : scrapers) {
+            scraper.stop();
+            while(scraper.isRunning()) {
+                scraper.wait();
+            }
+        }
     }
 
     public boolean isRunning() {

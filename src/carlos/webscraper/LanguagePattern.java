@@ -2,7 +2,7 @@ package carlos.webscraper;
 
 import java.util.regex.Pattern;
 
-public enum Language {
+public enum LanguagePattern {
     ENGLISH("en"),
     CROATIAN("hr"),
     GERMAN("de"),
@@ -16,8 +16,8 @@ public enum Language {
 
     final Pattern LANG_PATTERN;
 
-    Language(String lang) {
-        this.LANG_PATTERN = Pattern.compile(String.format("\\.%s|%s\\.|/%s/", lang, lang, lang));
+    LanguagePattern(String lang) {
+        this.LANG_PATTERN = Pattern.compile(String.format("\\.%s[./]|[./]%s\\.|/%s/", lang, lang, lang));
     }
 
 }

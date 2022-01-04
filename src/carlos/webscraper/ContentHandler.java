@@ -3,109 +3,77 @@ package carlos.webscraper;
 import java.io.IOException;
 import java.io.Serial;
 import java.io.Serializable;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 
-import static carlos.webscraper.StandardContentType.LINK;
-import static java.nio.file.Files.exists;
-import static java.nio.file.Files.newBufferedWriter;
 import static java.util.stream.Collectors.toMap;
 
-public class ContentHandler implements Serializable {
+final class ContentHandler implements Serializable {
     @Serial
     private static final long serialVersionUID = 395515185246116492L;
+    private int DATA_LIMIT;
+    private LinkParser linkParser;
+    private final Map<HTMLParser, Integer> types;
 
-    private ContentType link;
-    private final Map<ContentType, Integer> types;
-
-    ContentHandler(ContentType... otherContent) {
-        types = Arrays.stream(otherContent).collect(toMap(ct -> ct, i -> 0));
-        link = LINK.get();
+    ContentHandler(HTMLParser... data) {
+        types = Arrays.stream(data).collect(toMap(collectable -> collectable, i -> 0));
+        linkParser = LinkParser.STANDARD;
     }
 
-    void restrictLanguage(Language l) {
-        link = new ContentType("link") {
-            @Serial
-            private static final long serialVersionUID = 1513148274869536319L;
-
-            @Override
-            public String pattern() {
-                return link.pattern();
-            }
-
-            @Override
-            public boolean onAddFilter(String s) {
-                return l.LANG_PATTERN.matcher(s).find();
-            }
-        };
+    void restrictLanguage(LanguagePattern languagePattern) {
+        linkParser.addLanguageFilter(languagePattern);
     }
 
-    void setCustomLink (ContentType link) {
-        this.link = link;
+    void setCustomLinkType(LinkParser linkParser) {
+        this.linkParser = linkParser;
     }
 
-    public void addData(ContentType ct, Set<String> newData, int limit) {
-        types.put(ct, types.get(ct) + ct.addData(newData, limit));
+    synchronized void addAllNewContent(String html) {
+        types.replaceAll((c, v) -> types.get(c) + c.addContentFrom(html, DATA_LIMIT));
     }
 
-    public int getContributed(ContentType content) {
+    public int getContributed(HTMLParser content) {
         return types.get(content);
     }
 
     Set<String> getLinks(String html) {
-        return getContent(getLink(), html);
+        return linkParser.getContent(html);
     }
 
-    Set<String> getContent(ContentType ct, String html) {
-        var matcher = ct.getPATTERN().matcher(ct.transform(html));
-        Set<String> content = new HashSet<>();
-        while(matcher.find()) {
-            var group = matcher.group();
-            if(ct.onAddFilter(group))
-                content.add(group);
-        }
-        return content;
+
+
+    synchronized void saveAllContent() throws IOException {
+        for(var content : types.keySet())
+            content.saveContent();
     }
 
-    synchronized static void saveContent(ContentType content) throws IOException {
-        if(content.getData().size() > 0) {
-            var option = getOption(content);
-            try (var w = newBufferedWriter(content.getPath(), option)) {
-                for (var data : content.getData()) {
-                    w.write(data);
-                    w.newLine();
-                }
-            }
-        }
+    synchronized boolean linkNotVisited(String link) {
+        return !this.linkParser.contains(link);
     }
 
-    synchronized void saveLinks(Collection<?> data) throws IOException {
-        try (var w = newBufferedWriter(link.getPath(), getOption(link))) {
-            for (var d : data) {
-                w.write(d.toString());
-                w.newLine();
-            }
-        }
+    LinkParser getLinkImpl() {
+        return linkParser;
     }
 
-    private static StandardOpenOption getOption(ContentType ct) {
-        if (exists(ct.getPath()))
-            return StandardOpenOption.APPEND;
-        return StandardOpenOption.CREATE;
-    }
-
-    ContentType getLink() {
-        return link;
-    }
-
-    Map<ContentType, Integer> getContentTypeContributions() {
+    Map<HTMLParser, Integer> getContentTypeContributions() {
         return types;
     }
-    Set<ContentType> getContentTypeSet() {
+    Set<HTMLParser> getContentTypeSet() {
         return types.keySet();
     }
 
-    boolean notAllAreCollected(int limit) {
-        return !types.keySet().stream().allMatch(content -> content.reachedLimit(limit));
+    boolean notAllAreCollected() {
+        return !types.keySet().stream().allMatch(content -> content.reachedLimit(DATA_LIMIT));
+    }
+
+    void addLink(String link) {
+        linkParser.addVisitedLink(link, DATA_LIMIT);
+    }
+
+    void setLimit(int limit) {
+        this.DATA_LIMIT = limit;
+    }
+
+    public boolean reachedLimit(HTMLParser HTMLParser) {
+        return HTMLParser.reachedLimit(DATA_LIMIT);
     }
 }
