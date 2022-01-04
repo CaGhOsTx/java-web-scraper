@@ -23,7 +23,7 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
     private byte[] bits;
 
     /**
-     * Creates an empty <code>BitSet</code>.
+     * Creates an empty {@link BitSet}
      * @see BitSet
      */
     public BitSet() {
@@ -31,31 +31,31 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
     }
 
     /**
-     * Only required for the static <code>EMPTY BitSet</code>. <br/>
+     * Only required for the static {@link BitSet.EMPTY}. <br/>
      * API manages its size automatically, so it is not required to pre-set the size.
      * @param size initial size.
      */
     private BitSet(int size) {
-        bits = new byte[size >>> 3];
+        bits = new byte[size >>> 0b11];
     }
 
     /**
-     * Creates a <code>BitSet</code> and pre-sets the bits defined in the list
+     * Creates a {@link BitSet} and pre-sets the bits defined in the list
      * @param bits bits to be set.
-     * @throws NullPointerException if specified <code>List</code> is null.
+     * @throws NullPointerException if specified {@link List} is null.
      * @see BitSet
      * @see List
      */
     public BitSet(List<Integer> bits) {
         Objects.requireNonNull(bits);
-        this.bits = new byte[(max(bits) >>> 3) + 1];
+        this.bits = new byte[(max(bits) >>> 0b11) + 0b1];
         setBits(bits);
     }
 
     /**
      * Copy constructor for this class.
-     * @param copy <code>BitSet</code> to copy.
-     * @throws NullPointerException if specified <code>BitSet</code> is null.
+     * @param copy {@link BitSet} to copy.
+     * @throws NullPointerException if specified {@link BitSet} is null.
      * @see BitSet
      */
     public BitSet(BitSet copy) {
@@ -69,11 +69,11 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
      * @see BitSet
      */
     public int size() {
-        return (bits.length << 3);
+        return (bits.length << 0b11);
     }
 
     /**
-     * Inverts this <code>BitSet</code>.<br/>
+     * Inverts this {@link BitSet}.<br/>
      * Eg. 101 -> 010
      * @return the same object. <b>MUTABLE OPERATION</b>
      * @see BitSet
@@ -85,7 +85,7 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
     }
 
     /**
-     * Inverts this <code>BitSet</code>.<br/>
+     * Inverts this {@link BitSet}.<br/>
      * Eg. 101 -> 010
      * @return new inverted <code>BitSet</code>. <b>IMMUTABLE OPERATION</b>
      * @see BitSet
@@ -95,10 +95,10 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
     }
 
     /**
-     * ANDs this <code>BitSet</code> with the specified <code>BitSet</code>. <br/>
+     * ANDs this {@link BitSet} with the specified {@link BitSet}. <br/>
      * Eg. 101 & 110 -> 100
-     * @param other <code>BitSet</code> to be ANDed with.
-     * @return new resultant <code>BitSet</code>. <b>IMMUTABLE OPERATION</b>
+     * @param other {@link BitSet} to be ANDed with.
+     * @return new resultant {@link BitSet}. <b>IMMUTABLE OPERATION</b>
      * @throws NullPointerException if specified <code>BitSet</code> is null.
      * @see BitSet
      */
@@ -111,11 +111,11 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
     }
 
     /**
-     * ORs this <code>BitSet</code> with the specified <code>BitSet</code>. <br/>
+     * ORs this {@link BitSet} with the specified {@link BitSet}. <br/>
      * Eg. 101 & 110 -> 111
-     * @param other <code>BitSet</code> to be ORed with.
-     * @return new resultant <code>BitSet</code>. <b>IMMUTABLE OPERATION</b>
-     * @throws NullPointerException if specified <code>BitSet</code> is null.
+     * @param other {@link BitSet} to be ORed with.
+     * @return new resultant {@link BitSet}. <b>IMMUTABLE OPERATION</b>
+     * @throws NullPointerException if specified {@link BitSet} is null.
      * @see BitSet
      */
     public BitSet or(BitSet other) {
@@ -127,11 +127,11 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
     }
 
     /**
-     * XORs this <code>BitSet</code> with the specified <code>BitSet</code>. <br/>
+     * XORs this {@link BitSet} with the specified {@link BitSet}. <br/>
      * Eg. 101 & 110 -> 011
-     * @param other <code>BitSet</code> to be ANDed with.
-     * @return new resultant <code>BitSet</code>. <b>IMMUTABLE OPERATION</b>
-     * @throws NullPointerException if specified <code>BitSet</code> is null.
+     * @param other {@link BitSet} to be ANDed with.
+     * @return new resultant {@link BitSet}. <b>IMMUTABLE OPERATION</b>
+     * @throws NullPointerException if specified {@link BitSet} is null.
      * @see BitSet
      */
     public BitSet xor(BitSet other) {
@@ -150,7 +150,7 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
      */
     public void resetBit(int b) {
         outOfBoundsCheck(b);
-        bits[b >>> 3] &= ~((byte) 1 << (b & 7));
+        bits[b >>> 0b11] &= ~((byte) 0b1 << (b & 0b111));
         shrinkIfPossible();
     }
 
@@ -163,8 +163,8 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
     public void setBit(int b) {
         expandBits(b);
         outOfBoundsCheck(b);
-        // to clarify: a % x == a & (x - 1) ∀x ∈ { log2(x) ∈ Z }
-        bits[b >>> 3] |= ((byte) 1 << (b & 7));
+        // to clarify: a % x == a & (x - 1) ∀x ∈ { r = radix ∈ N | log(x) / log(r) ∈ N }
+        bits[b >>> 0b11] |= ((byte) 0b1 << (b & 0b111));
     }
 
     /**
@@ -176,15 +176,15 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
     public void toggleBit(int b) {
         expandBits(b);
         outOfBoundsCheck(b);
-        // to clarify: a % x == a & (x - 1) ∀x ∈ { log2(x) ∈ Z }
-        bits[b >>> 3] ^= ((byte) 1 << (b & 7));
+        // to clarify: a % x == a & (x - 1) ∀x ∈ { r = radix ∈ N | log(x) / log(r) ∈ N }
+        bits[b >>> 0b11] ^= ((byte) 0b1 << (b & 0b111));
         shrinkIfPossible();
     }
 
     /**
      * Sets all bits in the list to 1.
      * @param bits list of bits to be set.
-     * @throws NullPointerException if the specified <code>List</code> is null.
+     * @throws NullPointerException if the specified {@link List} is null.
      * @see BitSet
      * @see List
      */
@@ -203,7 +203,7 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
     public boolean isSet(int b) {
         outOfBoundsCheck(b);
         // to clarify: a % x == a & (x - 1) ∀x ∈ { log2(x) ∈ Z }
-        return (bits[b >>> 3] & ((byte) 1 << (b & 7))) != 0;
+        return (bits[b >>> 0b11] & ((byte) 0b1 << (b & 0b111))) != 0;
     }
     @Override
     public String toString() {
@@ -217,7 +217,7 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
 
     /**
      * Two bitsets are equal if their bits match. Identical to the bitwise XNOR operation.
-     * @param o <code>BitSet</code> to be compared with.
+     * @param o {@link BitSet} to be compared with.
      * @return true if they are equal.
      * @see BitSet
      */
@@ -287,7 +287,7 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
     }
 
     private void expandBits(int b) {
-        int index = b >>> 3;
+        int index = b >>> 0b11;
         if(index >= bits.length)
             bits = Arrays.copyOf(bits, index + 1);
     }
