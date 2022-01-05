@@ -8,6 +8,7 @@ final class ThreadHandler {
     private boolean stop = false;
     private Runnable task;
     final int initialSize;
+    int alive = 0;
     ThreadHandler(int n) {
         threadPool = new LinkedList<>();
         initialSize = n;
@@ -55,12 +56,13 @@ final class ThreadHandler {
     private void allocateThreads(int n) {
         for (int i = threadPool.size(); i < n; i++) {
             threadPool.add(new Thread(task));
+            alive++;
             threadPool.get(i).start();
         }
     }
 
     synchronized boolean allTerminated() {
-        return hasATask() && threadPool.stream().noneMatch(Thread::isAlive);
+        return alive == 0;
     }
 
     int size() {
@@ -68,14 +70,14 @@ final class ThreadHandler {
     }
 
     boolean shouldStop() {
+        if(stop) {
+            alive--;
+            threadPool.remove(Thread.currentThread());
+        }
         return stop;
     }
 
     synchronized boolean isLastThread() {
-        return threadPool.stream().filter(Thread::isAlive).count() == 1;
-    }
-
-    synchronized void notifyScraper(WebScraper scraper) {
-        scraper.notify();
+        return alive == 0;
     }
 }

@@ -4,35 +4,46 @@ import java.io.IOException;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.BiFunction;
 
+import static carlos.webscraper.HTMLParser.saveContent;
 import static java.util.stream.Collectors.toMap;
 
 final class ContentHandler implements Serializable {
     @Serial
     private static final long serialVersionUID = 395515185246116492L;
-    private int DATA_LIMIT;
+    private int DATA_LIMIT = 1_000_000;
     private LinkParser linkParser;
-    private final Map<HTMLParser, Integer> types;
+    private final Map<HTMLParser, Integer> contributionsToParser;
 
     ContentHandler(HTMLParser... data) {
-        types = Arrays.stream(data).collect(toMap(collectable -> collectable, i -> 0));
-        linkParser = LinkParser.STANDARD;
+        contributionsToParser = Arrays.stream(data).collect(toMap(collectable -> collectable, i -> 0));
+        linkParser = LinkParser.STANDARD();
     }
 
     void restrictLanguage(LanguagePattern languagePattern) {
         linkParser.addLanguageFilter(languagePattern);
     }
 
-    void setCustomLinkType(LinkParser linkParser) {
+    void setCustomLinkParser(LinkParser linkParser) {
         this.linkParser = linkParser;
     }
 
     synchronized void addAllNewContent(String html) {
-        types.replaceAll((c, v) -> types.get(c) + c.addContentFrom(html, DATA_LIMIT));
+        contributionsToParser.replaceAll(appendNewContributions(html));
+    }
+
+    void setContentSaving(boolean saving) {
+        for(var parser : contributionsToParser.keySet())
+            parser.setShouldSave(saving);
+    }
+
+    private BiFunction<HTMLParser, Integer, Integer> appendNewContributions(String html) {
+        return (parser, contribution) -> contributionsToParser.get(parser) + parser.addContentFrom(html, DATA_LIMIT);
     }
 
     public int getContributed(HTMLParser content) {
-        return types.get(content);
+        return contributionsToParser.get(content);
     }
 
     Set<String> getLinks(String html) {
@@ -42,27 +53,24 @@ final class ContentHandler implements Serializable {
 
 
     synchronized void saveAllContent() throws IOException {
-        for(var content : types.keySet())
-            content.saveContent();
+        for(var parser : contributionsToParser.keySet())
+            saveContent(parser);
     }
 
     synchronized boolean linkNotVisited(String link) {
-        return !this.linkParser.contains(link);
+        return !this.linkParser.alreadyVisited(link);
     }
 
-    LinkParser getLinkImpl() {
+    LinkParser getLinkParser() {
         return linkParser;
     }
 
-    Map<HTMLParser, Integer> getContentTypeContributions() {
-        return types;
-    }
-    Set<HTMLParser> getContentTypeSet() {
-        return types.keySet();
+    Set<HTMLParser> getContributionsToParser() {
+        return contributionsToParser.keySet();
     }
 
     boolean notAllAreCollected() {
-        return !types.keySet().stream().allMatch(content -> content.reachedLimit(DATA_LIMIT));
+        return !contributionsToParser.keySet().stream().allMatch(content -> content.reachedLimit(DATA_LIMIT));
     }
 
     void addLink(String link) {
@@ -70,10 +78,11 @@ final class ContentHandler implements Serializable {
     }
 
     void setLimit(int limit) {
-        this.DATA_LIMIT = limit;
+        DATA_LIMIT = limit;
     }
 
     public boolean reachedLimit(HTMLParser HTMLParser) {
         return HTMLParser.reachedLimit(DATA_LIMIT);
     }
+
 }

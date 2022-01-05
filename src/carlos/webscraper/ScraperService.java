@@ -4,12 +4,11 @@ import java.io.*;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-import static carlos.webscraper.Action.fromString;
+import static carlos.webscraper.Action.*;
 
 public class ScraperService implements Serializable {
 
@@ -24,7 +23,28 @@ public class ScraperService implements Serializable {
     public ScraperService(List<WebScraper> scrapers) {
         this.scrapers = scrapers;
         id = ++globalID;
-        manager.start();
+    }
+
+    public ScraperService(Supplier<WebScraperBuilder> builderTemplate, String... links) {
+        scrapers = new ArrayList<>(links.length);
+        Arrays.stream(links).forEach(l -> scrapers.add(builderTemplate.get().setInitialURL(l).build()));
+        id = ++globalID;
+    }
+
+    void actionOnScraper(List<String> options, Consumer<WebScraper> cons) {
+        if(options.isEmpty()) return;
+        for(var scraper : scrapers)
+            if(scraper.toString().equals(options.get(0))) {
+                cons.accept(scraper);
+                return;
+            }
+        System.out.println("Scraper \"" + options.get(0) + "\" doesn't exist");
+        printScraperNames();
+    }
+
+    private void printScraperNames() {
+        System.out.println("\tscrapers:");
+        scrapers.stream().map(WebScraper::toString).forEach(name -> System.out.println("\t\t" + name));
     }
 
     public void start() {
@@ -34,7 +54,6 @@ public class ScraperService implements Serializable {
     public ScraperService(WebScraper... scrapers) {
         this.scrapers = Arrays.stream(scrapers).toList();
         id = ++globalID;
-        manager.start();
     }
 
     @Serial
@@ -56,7 +75,7 @@ public class ScraperService implements Serializable {
     private void writeObject(ObjectOutputStream out) throws IOException, InterruptedException {
         out.defaultWriteObject();
     }
-
+    @Deprecated
     public Path serialize() {
         scrapers.forEach(ws -> ws.addOption(Option.SERIALIZE_ON_CLOSE));
         stop();
@@ -75,7 +94,7 @@ public class ScraperService implements Serializable {
             do {
                 in = sc.nextLine();
                 try {
-                    action(fromString(in));
+                    action(in);
                 } catch (IllegalStateException e) {
                     System.out.println(e.getMessage());
                 }
@@ -83,42 +102,55 @@ public class ScraperService implements Serializable {
         }
     }
 
-    private void action(Action a) {
-        switch(a) {
+    private void action(String in) {
+        switch(fromString(in)) {
             case NAME -> System.out.println(this);
             case HELP -> help();
             case INFO -> info();
             case START -> startScrapers();
             case STOP -> stop();
             case TIME -> time();
+            case LIST -> printScraperNames();
             case SERIALIZE -> System.out.println(serialize());
+            case START_SCRAPER -> actionOnScraper(parseOptions(in), WebScraper::start);
+            case STOP_SCRAPER -> actionOnScraper(parseOptions(in), WebScraper::stop);
         }
     }
+
 
     private void help() {
         for(var action : Action.values())
             System.out.println(action + "\t- " + action.info);
     }
 
-    private void time() {
+    void time() {
         long s = Duration.between(startTime, LocalTime.now()).toSeconds();
-        System.out.println("Time elapsed: " + String.format("%d hours %d minutes %d seconds", s / 3600, (s % 3600) / 60, (s % 60)));
+        System.out.println("Time elapsed: " + formattedTime(s));
+    }
+
+    private String formattedTime(long s) {
+        return String.format("%d hours %d minutes %d seconds", s / 3600, (s % 3600) / 60, (s % 60));
     }
 
     private void info() {
         System.out.println("COLLECTED DATA:");
         scrapers.stream().map(WebScraper::getCollectedInfo)
                 .forEach(System.out::println);
+        printAmountRunning();
     }
 
     private void startScrapers() {
         System.out.println("Starting all scrapers...");
         startAll();
-        long started = scrapers.stream().filter(WebScraper::isRunning).count();
-        System.out.printf("%d/%d started successfully%n", started, scrapers.size());
+        printAmountRunning();
     }
 
-    private void stop() {
+    private void printAmountRunning() {
+        long started = scrapers.stream().filter(WebScraper::isRunning).count();
+        System.out.printf("%d/%d running%n", started, scrapers.size());
+    }
+
+    void stop() {
         System.out.println("Stopping all scrapers...");
         try {
             stopAll();
@@ -133,12 +165,7 @@ public class ScraperService implements Serializable {
     }
 
     public void stopAll() throws InterruptedException {
-        for (WebScraper scraper : scrapers) {
-            scraper.stop();
-            while(scraper.isRunning()) {
-                scraper.wait();
-            }
-        }
+        scrapers.forEach(WebScraper::stop);
     }
 
     public boolean isRunning() {
@@ -160,7 +187,7 @@ public class ScraperService implements Serializable {
 
     @Override
     public String toString() {
-        return "ScraperService{" +
+        return "ScraperService" + id + "{" +
                 "scrapers=" + scrapers +
                 '}';
     }

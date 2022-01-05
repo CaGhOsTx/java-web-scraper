@@ -201,7 +201,8 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
      * @see BitSet
      */
     public boolean isSet(int b) {
-        outOfBoundsCheck(b);
+        if(b < 0) throw new IndexOutOfBoundsException("Bit cannot be negative.");
+        else if(b >= size()) return false;
         // to clarify: a % x == a & (x - 1) ∀x ∈ { log2(x) ∈ Z }
         return (bits[b >>> 3] & ((byte) 1 << (b & 7))) != 0;
     }

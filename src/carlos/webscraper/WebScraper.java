@@ -4,10 +4,10 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.regex.Pattern;
 
 import static carlos.webscraper.HTMLParser.CACHE_LIMIT;
 import static carlos.webscraper.Option.*;
@@ -33,42 +33,59 @@ public final class WebScraper implements Serializable {
         id = ++globalID;
     }
 
-    public void start() throws IllegalStateException {
-        System.out.println(this + "STARTED");
-        try {
-            addUnvisitedLinksToQueue(visitAndRetrieveHTML(startURL), startURL);
-            threadHandler.setTask(this::main).start();
-        } catch(PageWithoutLinksException e) {
-            System.err.println("UNABLE TO START " + this);
+    public void start() {
+        if(isRunning()) System.err.println(this + " is already running!");
+        else {
+            System.out.println(this + " STARTED");
+            try {
+                if(unvisitedLinks.isEmpty())
+                    addUnvisitedLinksToQueue(visitAndRetrieveHTML(startURL), startURL);
+                threadHandler.setTask(this::main).start();
+            } catch (PageWithoutLinksException e) {
+                System.err.println("UNABLE TO START " + this);
+            }
         }
     }
 
     public void stop() {
         threadHandler.stop();
+        while(isRunning()) {
+            System.out.println("waiting for " + this + " to close...");
+            synchronized(this) {
+                try {
+                    this.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
-    public synchronized void close() {
+    private synchronized void close() {
         try {
-            if(optionHandler.isTrue(SAVE_LINKS)) saveLinks();
-            if(optionHandler.isTrue(SAVE_CONTENT)) saveAllContent();
-            if(optionHandler.isTrue(SERIALIZE_ON_CLOSE))
+            if(optionHandler.isPresent(SAVE_LINKS)) saveLinks();
+            if(optionHandler.isPresent(SAVE_PARSED_ELEMENTS)) saveAllContent();
+            if(optionHandler.isPresent(SERIALIZE_ON_CLOSE))
                 System.out.println("Scraper serialized... path to object -> " +  serialize());
         } catch (IOException e) {
             e.printStackTrace();
         }
         printFinished();
-        threadHandler.notifyScraper(this);
+        synchronized (this) {
+            this.notifyAll();
+        }
     }
 
     static WebScraper deserialize(Path path) throws IOException, ClassNotFoundException {
         return  (WebScraper) new ObjectInputStream(new BufferedInputStream(new FileInputStream(path.toFile()))).readObject();
     }
 
+    @Deprecated
     private Path serialize() throws IOException {
-        if(unvisitedLinks.isEmpty() && optionHandler.isTrue(DEBUG_MODE))
+        if(unvisitedLinks.isEmpty() && optionHandler.isPresent(DEBUG_MODE))
             System.err.println("Did not serialize, scraper reached end.");
         else {
             try {
-                writeObject(new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("WebScraper_from " + startURL))));
+                writeObject(new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(this.toString()))));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -78,14 +95,17 @@ public final class WebScraper implements Serializable {
 
     @Override
     public String toString() {
-        return "WebScraper::" + id + " (started from " + startURL + ")";
+        return "WebScraper_" + id + "@" + getOriginalSite(startURL);
+    }
+
+    private String getOriginalSite(String originalURL) {
+        var m = Pattern.compile("(?<=\\.)([A-Za-z_]+?)(?=[.])").matcher(originalURL);
+        if(m.find()) return m.group(1);
+        else throw new IllegalArgumentException("cannot parse main site");
     }
 
     @Serial
     private void writeObject(ObjectOutputStream out) throws IOException, InterruptedException {
-        threadHandler.stop();
-        while(this.isRunning())
-            this.wait(100);
         out.defaultWriteObject();
         out.writeInt(threadHandler.size());
     }
@@ -99,12 +119,12 @@ public final class WebScraper implements Serializable {
 
     private synchronized void saveAllContent() throws IOException {
         contentHandler.saveAllContent();
-        if (optionHandler.isTrue(DEBUG_MODE)) System.out.println("Content saved");
+        if (optionHandler.isPresent(DEBUG_MODE)) System.out.println("Content saved");
     }
 
     private void saveLinks() throws IOException {
-        contentHandler.getLinkImpl().saveLinks(unvisitedLinks);
-        if (optionHandler.isTrue(DEBUG_MODE))
+        contentHandler.getLinkParser().saveLinks(unvisitedLinks);
+        if (optionHandler.isPresent(DEBUG_MODE))
             System.out.println("Links saved");
     }
 
@@ -115,30 +135,30 @@ public final class WebScraper implements Serializable {
     }
 
     private void main() {
-        while (optionHandler.isTrue(UNLIMITED) || contentHandler.notAllAreCollected()) {
+        while (optionHandler.isPresent(UNLIMITED) || contentHandler.notAllAreCollected()) {
             var link = nextLink();
             String html = visitAndRetrieveHTML(link);
             if(unvisitedLinks.size() < CACHE_LIMIT)
                 tryToAddNewLinks(link, html);
             contentHandler.addAllNewContent(html);
-            printDebugMain(contentHandler.getContentTypeSet());
+            printDebugMain(contentHandler.getContributionsToParser());
             if (threadHandler.shouldStop())
                 break;
         }
-        threadHandler.notify();
         printDebugClosingThread();
         if(threadHandler.isLastThread()) close();
+
     }
 
     private void printDebugClosingThread() {
-        if(optionHandler.isTrue(DEBUG_MODE)) System.out.println(Thread.currentThread() + " stopping");
+        if(optionHandler.isPresent(DEBUG_MODE)) System.out.println(Thread.currentThread() + " stopping");
     }
 
     private void tryToAddNewLinks(String link, String html) {
         try {
             addUnvisitedLinksToQueue(html, link);
         } catch(PageWithoutLinksException e) {
-            if(optionHandler.isTrue(DEBUG_MODE)) System.err.println(e.getMessage());
+            if(optionHandler.isPresent(DEBUG_MODE)) System.err.println(e.getMessage());
         }
     }
 
@@ -148,7 +168,7 @@ public final class WebScraper implements Serializable {
 
     private void printDebugMain(Set<HTMLParser> collectableDatumParsers) {
         for(var ct : collectableDatumParsers)
-            if(optionHandler.isTrue(DEBUG_MODE)) {
+            if(optionHandler.isPresent(DEBUG_MODE)) {
                 System.out.println(currentThread().getName());
                 System.out.println("accumulated " + ct.NAME + ": " + ct.getTotal());
             }
@@ -172,8 +192,8 @@ public final class WebScraper implements Serializable {
     }
 
     private void printDebugRL() {
-        if(optionHandler.isTrue(DEBUG_MODE)) {
-            System.out.println("visited links: " + contentHandler.getLinkImpl().getTotal());
+        if(optionHandler.isPresent(DEBUG_MODE)) {
+            System.out.println("visited links: " + contentHandler.getLinkParser().getTotal());
             System.out.println("unvisited links: " + unvisitedLinks.size());
         }
     }
@@ -189,7 +209,7 @@ public final class WebScraper implements Serializable {
                 while ((b = reader.read()) != -1)
                     sb.append((char) b);
             } catch (IOException | URISyntaxException e) {
-                if (optionHandler.isTrue(DEBUG_MODE)) {
+                if (optionHandler.isPresent(DEBUG_MODE)) {
                     System.err.println(e.getMessage());
                     ifTooManyRequestsErrorSleep(e);
                     System.err.println("Couldn't visit page:" + url);
@@ -211,7 +231,7 @@ public final class WebScraper implements Serializable {
     }
 
     private void debugGetHTML(String url) {
-        if(optionHandler.isTrue(DEBUG_MODE))
+        if(optionHandler.isPresent(DEBUG_MODE))
             System.out.println("visiting " + url);
     }
 
@@ -229,7 +249,7 @@ public final class WebScraper implements Serializable {
 
     private void appendLinks(StringBuilder sb) {
         sb.append("\tunvisited links: ").append(unvisitedLinks.size()).append('\n')
-            .append("\tvisited links: ").append(contentHandler.getLinkImpl().getTotal()).append('\n');
+            .append("\tvisited links: ").append(contentHandler.getLinkParser().getTotal()).append('\n');
     }
 
     private void appendNameAndState(StringBuilder sb) {
@@ -239,21 +259,17 @@ public final class WebScraper implements Serializable {
 
     private void appendContributions(StringBuilder sb) {
         sb.append("\tcontributed:").append('\n');
-        for(var content : contentHandler.getContentTypeSet()) {
+        for(var content : contentHandler.getContributionsToParser()) {
             int contributed = contentHandler.getContributed(content);
             appendCollectionAnalysis(sb, content, contributed);
         }
     }
 
-    Map<HTMLParser, Integer> contributed() {
-        return contentHandler.getContentTypeContributions();
-    }
-
     private void appendCollectionAnalysis(StringBuilder sb, HTMLParser content, int contributed) {
-        int percentage = content.getTotal() == 0 ? 0 : (contributed / content.getTotal()) * 100;
+        float percentage = content.getTotal() == 0 ? 0 : (contributed / (float) content.getTotal()) * 100;
         sb.append("\t\t").append(content).append(": ")
                 .append(contributed)
-                .append(" (").append(percentage).append("% of total)")
+                .append(" (").append(String.format("%.2f", percentage)).append("% of total)")
                 .append('\n');
     }
 
