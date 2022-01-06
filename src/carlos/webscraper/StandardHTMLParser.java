@@ -35,7 +35,7 @@ public enum StandardHTMLParser {
         @Override
         public boolean onAddFilter(String element) {
             var tmp = element.split("\\s+");
-            return tmp.length >= 2 && tmp.length <= 10;
+            return tmp.length >= 3 && tmp.length <= 10;
         }
     });
 

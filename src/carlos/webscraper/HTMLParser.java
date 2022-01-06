@@ -6,13 +6,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.lang.Runtime.getRuntime;
 import static java.nio.file.Files.exists;
 import static java.nio.file.Files.newBufferedWriter;
 import static java.util.Collections.newSetFromMap;
@@ -33,7 +36,7 @@ public abstract class HTMLParser implements Parsable {
 
     protected final String NAME;
     protected int collected = 0;
-    protected Set<String> cache = newSetFromMap(new ConcurrentHashMap<>());
+    protected  volatile Set<String> cache = newSetFromMap(new ConcurrentHashMap<>());
     protected boolean shouldSave;
 
     protected final Pattern PATTERN;
@@ -41,34 +44,21 @@ public abstract class HTMLParser implements Parsable {
     /**
      * Saves the content stored in the cache.
      * Reason for the method being static is to stop multiple threads
-     * writing the same data when multiple {@link WebScraper}s are collectively using this {@link HTMLParser}.
-     * @param parser usually this parser.
+     * writing the same data when multiple {@link WebScraper}s are collectively using this {@link HTMLParser}.<br/>
+     * The path to saved content is {@link HTMLParser#pathToContent()}
      * @throws IOException if the data cannot be saved for any reason.
      * @see WebScraper
      */
-    static synchronized void saveContent(HTMLParser parser) throws IOException {
-        if(!parser.cache.isEmpty()) {
-            try (var w = newBufferedWriter(parser.pathToContent(), parser.openOption())) {
-                parser.removeDuplicates();
-                for (var token : parser.cache) {
+     void saveContent() throws IOException {
+        if(!cache.isEmpty()) {
+            System.out.println("saving " + cacheSize() + " elements...");
+            try (var w = newBufferedWriter(pathToContent(), openOption())) {
+                //removeDuplicates();
+                for (var token : cache) {
                     w.write(token);
                     w.newLine();
                 }
             }
-        }
-    }
-
-    private synchronized void removeDuplicates() {
-        IntStream.iterate(0, i -> i < collected - cacheSize(), i -> i + CACHE_LIMIT).parallel()
-                .forEach(this::removeDuplicateElements);
-    }
-
-    private synchronized void removeDuplicateElements(int i) {
-        try {
-            Files.lines(pathToContent()).skip(i).limit(CACHE_LIMIT).parallel()
-                    .filter(cache::contains).forEach(cache::remove);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -93,10 +83,11 @@ public abstract class HTMLParser implements Parsable {
 
     /**
      * Returns the {@link Path} to which this {@link HTMLParser} data has been saved.
+     *
      * @return {@link Path} to file.
      */
     public Path pathToContent() {
-        return Paths.get(this.getClass().getSimpleName() + "&" + NAME + ".txt");
+        return Paths.get(this.getClass().getName() + "&" + NAME + ".txt");
     }
 
     /**
@@ -117,15 +108,11 @@ public abstract class HTMLParser implements Parsable {
         return PATTERN;
     }
 
-    final void setShouldSave(boolean shouldSave) {
-        this.shouldSave = shouldSave;
-    }
-
     /**
      *
      * @return cached data size.
      */
-    final synchronized int cacheSize() {
+    final int cacheSize() {
         return cache.size();
     }
 
@@ -133,16 +120,16 @@ public abstract class HTMLParser implements Parsable {
      * Adds data provided to the parsers internal cache.
      * @param parsedElements elements to be added.
      * @param limit {@link ContentHandler#DATA_LIMIT}
-     * @return the change in size of the cache. (used to monitor {@link WebScraper} individual contributions.
+     * @return the change in size of the cache used to monitor {@link WebScraper} individual contributions.
      * @see WebScraper
      */
-    synchronized int addData(Set<String> parsedElements, int limit) {
+    int addData(Set<String> parsedElements, int limit) {
         int previousSize = cache.size();
         cache.addAll(parsedElements);
         if(newDataOverflowsLimit(limit)) trimToSize(limit);
         int difference = cache.size() - previousSize;
         collected += difference;
-        if(lessThan500MBRam() || cacheOverflowing()) flush();
+        if(cacheOverflowing()) flush();
         return difference;
     }
 
@@ -152,7 +139,7 @@ public abstract class HTMLParser implements Parsable {
     final synchronized void flush() {
         if(shouldSave) {
             try {
-                saveContent(this);
+                saveContent();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -166,7 +153,7 @@ public abstract class HTMLParser implements Parsable {
      * @param limit {@link ContentHandler#DATA_LIMIT}
      * @return change in size of the {@link HTMLParser#cache}.
      */
-    final synchronized int addContentFrom(String html, int limit) {
+    final int addContentFrom(String html, int limit) {
         if(!reachedLimit(limit))
             return addData(getContent(html), limit);
         return 0;
@@ -176,7 +163,7 @@ public abstract class HTMLParser implements Parsable {
      *
      * @return the total amount of parsed elements collected.
      */
-    final synchronized int getTotal() {
+    final int getTotal() {
         return collected;
     }
 
@@ -184,7 +171,7 @@ public abstract class HTMLParser implements Parsable {
      * tests if the current cache size is greater than the {@link HTMLParser#CACHE_LIMIT}
      * @return true if it is overflowing.
      */
-    final protected synchronized boolean cacheOverflowing() {
+    final protected  boolean cacheOverflowing() {
         return cacheSize() >= CACHE_LIMIT;
     }
 
@@ -194,7 +181,7 @@ public abstract class HTMLParser implements Parsable {
      * @return true if overflowing.
      * @see ContentHandler
      */
-    final protected synchronized boolean newDataOverflowsLimit(int limit) {
+    final protected  boolean newDataOverflowsLimit(int limit) {
         return collected + cache.size() > limit;
     }
 
@@ -204,7 +191,7 @@ public abstract class HTMLParser implements Parsable {
      * @see ContentHandler
      */
     final protected void trimToSize(int limit) {
-        cache = cache.stream().limit(limit - collected).collect(Collectors.toSet());
+        cache = cache.stream().limit(Math.max(0,limit - collected)).collect(Collectors.toSet());
     }
 
     /**
@@ -223,17 +210,13 @@ public abstract class HTMLParser implements Parsable {
      * @return a {@link Set} of parsed elements.
      */
     final protected Set<String> getContent(String html) {
-        var matcher = getPATTERN().matcher(transform(html));
-        Set<String> content = new HashSet<>();
-        while(matcher.find()) {
-            var group = matcher.group();
-            if(onAddFilter(group))
-                content.add(group);
-        }
-        return content;
+        return getPATTERN().matcher(transform(html)).results()
+                .map(MatchResult::group)
+                .filter(this::onAddFilter)
+                .collect(Collectors.toSet());
     }
 
-    private boolean lessThan500MBRam() {
-        return getRuntime().freeMemory() < 100_000_000;
+    void enableSaving() {
+        shouldSave = true;
     }
 }

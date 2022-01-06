@@ -3,12 +3,13 @@ package carlos.webscraper;
 import java.io.Serializable;
 
 /**
- * The reason for this interface's existence is to provide default implementations for
+ * The reason for this interface's existence is to emphasize which methods can be over-ridden
  * <ul>
  *     <li>{@link Parsable#transform(String)}</li>
  *     <li>{@link Parsable#onAddFilter(String)}</li>
  * </ul>
- * methods, so that users of this API do not have to implement them if not required.<br/>
+ * It also provides default implementations for optional methods so that users of
+ * this API do not have to implement them if not required.<br/>
  * <br/>
  * Interface Implementations:
  * <ul>

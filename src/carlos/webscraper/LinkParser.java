@@ -16,12 +16,12 @@ import static java.nio.file.Files.newBufferedWriter;
  * that are from the same site only or ones which stick to
  * a specific language.<br/>
  * Implement if you want a different {@link Parsable#pattern()} for link parsing,
- *  otherwise use {@link LinkParser#STANDARD()} method.
+ *  otherwise use {@link LinkParser#newStandardLinkParser()} method.
  *  <br/>
  * <b> In situations when multiple {@link WebScraper}s are being used simultaneously,
  * and use the same {@link LinkParser} implementation,
  * give each {@link WebScraperBuilder} a clone of your implementation
- * (make a method similar to</b> {@link LinkParser#STANDARD()}
+ * (make a method similar to</b> {@link LinkParser#newStandardLinkParser()}
  * @see Parsable
  * @author Carlos Milkovic
  * @version a0.9
@@ -29,11 +29,12 @@ import static java.nio.file.Files.newBufferedWriter;
 public abstract class LinkParser extends HTMLParser {
     /**
      * Standard implementation of the {@link LinkParser}.<br/>
-     * Write a custom implementation if you are dissatisfied with the regex provided.
+     * Write a custom implementation if you are dissatisfied with the {@link LinkParser#pattern()}. <br/>
+     * REGEX: <code>(?<=href=")https?://[A-Za-z0-9./:_()\[\]{}-]+?(?=")</code>
      * @return a new instance of the standard implementation of {@link LinkParser}
      * @see LinkParser
      */
-    static LinkParser STANDARD() {
+    static LinkParser newStandardLinkParser() {
         return new LinkParser() {
             @Serial
             private static final long serialVersionUID = -7245878207925294233L;
@@ -48,7 +49,7 @@ public abstract class LinkParser extends HTMLParser {
     @Serial
     private static final long serialVersionUID = 1303388778823614737L;
     private LanguagePattern languagePattern;
-    private static final Pattern HTTP_PROTOCOL_LINK_PATTERN =
+    public static final Pattern HTTP_PATTERN =
     Pattern.compile("https?://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_+.~#?&=]*)");
     private final Pattern siteIdentifier = Pattern.compile("(?<=\\.)([A-Za-z_]+?)(?=[.])");
     private boolean stayOnSite;
@@ -66,13 +67,17 @@ public abstract class LinkParser extends HTMLParser {
 
     @Override
     final public boolean onAddFilter(String element) {
-        return  (stayOnSite || siteIdentifier.matcher(element).find())
-                && (languagePattern == null || languagePattern.LANG_PATTERN.matcher(element).find());
+        return  (stayOnSite && matches(element, siteIdentifier))
+                || (languagePattern == null || matches(element, languagePattern.PATTERN));
+    }
+
+    private boolean matches(String element, Pattern pattern) {
+        return pattern.matcher(element).find();
     }
 
     @Override
     final public Path pathToContent() {
-        return Paths.get(super.pathToContent() + "$visited" + hashCode());
+        return Paths.get("visited$" + super.pathToContent());
     }
 
     /**
@@ -82,10 +87,10 @@ public abstract class LinkParser extends HTMLParser {
      * @see WebScraper
      * @see LinkParser
      */
-    final synchronized void saveLinks(Queue<String> links) throws IOException {
-        saveContent(this);
+    final synchronized void saveLinks(Queue<String> links, WebScraper webScraper) throws IOException {
+        saveContent();
         if(!links.isEmpty()) {
-            try (var w = newBufferedWriter(Paths.get(super.pathToContent() + "$unvisited" + hashCode()), openOption())) {
+            try (var w = newBufferedWriter(Paths.get(webScraper + "$unvisited" + super.pathToContent()), openOption())) {
                 for (var link : links) {
                     w.write(link);
                     w.newLine();
@@ -164,7 +169,7 @@ public abstract class LinkParser extends HTMLParser {
      * @see LinkParser
      */
     final void verify(String url) throws IllegalArgumentException {
-        if(!HTTP_PROTOCOL_LINK_PATTERN.matcher(url).matches())
+        if(!HTTP_PATTERN.matcher(url).matches())
         throw new IllegalArgumentException(url + " is not recognized by " + this + " (" + pattern() + ")");
     }
 }

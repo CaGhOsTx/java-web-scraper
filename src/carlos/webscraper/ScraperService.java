@@ -10,11 +10,10 @@ import java.util.function.Supplier;
 
 import static carlos.webscraper.Action.*;
 
-public class ScraperService implements Serializable {
+final public class ScraperService implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -4106870085490275339L;
-    private transient Thread manager = new Thread(this::control);
     private final List<WebScraper> scrapers;
     private static int globalID;
     private final int id;
@@ -48,7 +47,7 @@ public class ScraperService implements Serializable {
     }
 
     public void start() {
-        manager.start();
+        control();
     }
 
     public ScraperService(WebScraper... scrapers) {
@@ -59,7 +58,7 @@ public class ScraperService implements Serializable {
     @Serial
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        manager = new Thread(this::control);
+        control();
     }
 
     public static ScraperService deserialize(Path path) {
@@ -134,7 +133,7 @@ public class ScraperService implements Serializable {
 
     private void info() {
         System.out.println("COLLECTED DATA:");
-        scrapers.stream().map(WebScraper::getCollectedInfo)
+        scrapers.stream().map(WebScraper::getInfo)
                 .forEach(System.out::println);
         printAmountRunning();
     }
@@ -177,12 +176,12 @@ public class ScraperService implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ScraperService that = (ScraperService) o;
-        return manager.equals(that.manager) && scrapers.equals(that.scrapers) && startTime.equals(that.startTime);
+        return scrapers.equals(that.scrapers) && startTime.equals(that.startTime);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(manager, scrapers, startTime);
+        return Objects.hash(scrapers, startTime);
     }
 
     @Override

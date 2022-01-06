@@ -34,10 +34,10 @@ public enum LanguagePattern {
     ITALIAN("it"),
     DUTCH("nl");
 
-    final Pattern LANG_PATTERN;
+    final Pattern PATTERN;
 
     LanguagePattern(String lang) {
-        this.LANG_PATTERN = Pattern.compile(String.format("\\.%s[./]|[./]%s\\.|/%s/", lang, lang, lang));
+        this.PATTERN = Pattern.compile(String.format("\\.%s[./]|[./]%s\\.|/%s/", lang, lang, lang));
     }
 
 }

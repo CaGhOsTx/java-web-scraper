@@ -12,16 +12,15 @@ import static java.util.stream.Collectors.toList;
  * Builder class for {@link WebScraper}.
  * @author Carlos Milkovic
  * @version a0.9
- * @see WebScraper
  */
 public final class WebScraperBuilder {
     private OptionHandler optionHandler = OptionHandler.EMPTY;
     private final ContentHandler contentHandler;
     private LinkParser linkParser;
-    private ThreadHandler threadHandler;
     private String initialURL;
     private LanguagePattern languagePattern;
     private int limit = 0;
+    private int nThreads = 1;
 
     private WebScraperBuilder(String initialURL, HTMLParser... customParsers) {
         this.initialURL = requireNonNull(initialURL);
@@ -36,12 +35,10 @@ public final class WebScraperBuilder {
      * <b> ONLY USE TO GIVE A TEMPLATE TO {@link ScraperService}!!! </b> <br/>
      * Static factory for a {@link WebScraperBuilder} with the bare minimum requirements for a {@link WebScraper} instance.
      * @param parsers  predefined implementations of {@link HTMLParser}. <br/>
-     * @throws NullPointerException if the initial URL is null.
-     * @see WebScraperBuilder
+     * @throws IllegalStateException if you try to build with this factory.
      * @see StandardHTMLParser
-     * @see ScraperService
      */
-    public static WebScraperBuilder of(StandardHTMLParser... parsers) throws NullPointerException {
+    public static WebScraperBuilder of(StandardHTMLParser... parsers) throws IllegalStateException {
         return new WebScraperBuilder(cast(parsers));
     }
 
@@ -49,12 +46,9 @@ public final class WebScraperBuilder {
      * <b> ONLY USE TO GIVE A TEMPLATE TO {@link ScraperService}!!! </b> <br/>
      * Static factory for a {@link WebScraperBuilder} with the bare minimum requirements for a {@link WebScraper} instance.
      * @param parsers  custom implementations of {@link HTMLParser}. <br/>
-     * @throws NullPointerException if the initial URL is null.
-     * @see WebScraperBuilder
-     * @see HTMLParser
-     * @see ScraperService
+     * @throws IllegalStateException if you try to build with this factory.
      */
-    public static WebScraperBuilder of(HTMLParser... parsers) throws NullPointerException {
+    public static WebScraperBuilder of(HTMLParser... parsers) throws IllegalStateException {
         return new WebScraperBuilder(parsers);
     }
 
@@ -63,8 +57,6 @@ public final class WebScraperBuilder {
      * @param initialURL url the scraper starts with.
      * @param parsers  custom implementations of {@link HTMLParser}.
      * @throws NullPointerException if the initial URL is null.
-     * @see WebScraperBuilder
-     * @see HTMLParser
      */
     public static WebScraperBuilder of(String initialURL, HTMLParser... parsers) throws NullPointerException {
         return new WebScraperBuilder(initialURL, parsers);
@@ -76,8 +68,6 @@ public final class WebScraperBuilder {
      * @param parsers  predefined implementations of {@link HTMLParser}. <br/>
      *                 <b>visit {@link StandardHTMLParser} to see if any match your needs. </b>
      * @throws NullPointerException if the initial URL is null.
-     * @see WebScraperBuilder
-     * @see StandardHTMLParser
      */
     public static WebScraperBuilder of(String initialURL, StandardHTMLParser... parsers) {
         return new WebScraperBuilder(requireNonNull(initialURL), cast(requireNonNull(parsers)));
@@ -92,8 +82,6 @@ public final class WebScraperBuilder {
      * @throws ClassNotFoundException when the serialized binary is not a {@link WebScraper}
      * or it's version is different
      * @deprecated serialization does not work at the moment.
-     * @see WebScraper
-     * @see Path
      */
     @Deprecated
     public static WebScraper deserialize(Path path) throws IOException, ClassNotFoundException {
@@ -107,7 +95,7 @@ public final class WebScraperBuilder {
      * @return the same object.
      * @throws IllegalArgumentException if limit is not positive.
      * @see WebScraperBuilder
-     * @see HTMLParser
+     * @see ContentHandler#DATA_LIMIT
      */
     public WebScraperBuilder withDataLimit(int limit) {
         if(limit <= 0) throw new IllegalArgumentException("limit must be positive");
@@ -133,8 +121,6 @@ public final class WebScraperBuilder {
      * @param languagePattern constant from which the country code is provided.
      * @return this {@link WebScraperBuilder} instance.
      * @throws NullPointerException if provided {@link LanguagePattern} is null.
-     * @see WebScraperBuilder
-     * @see LanguagePattern
      */
     public WebScraperBuilder restrictLanguage(LanguagePattern languagePattern) throws NullPointerException {
         requireNonNull(this.languagePattern = languagePattern);
@@ -146,7 +132,6 @@ public final class WebScraperBuilder {
      * @param options options to be set.
      * @return this {@link WebScraperBuilder} instance.
      * @throws NullPointerException if options is null.
-     * @see WebScraperBuilder
      * @see Option
      */
     public WebScraperBuilder withOptions(Option... options) throws NullPointerException {
@@ -163,30 +148,30 @@ public final class WebScraperBuilder {
      */
     public WebScraperBuilder withThreadPoolSize(int nThreads) throws IllegalArgumentException {
         if(nThreads < 1) throw new IllegalArgumentException("nThreads must be greater than 0!");
-        threadHandler = new ThreadHandler(nThreads);
+        this.nThreads = nThreads;
         return this;
     }
 
     /**
      * Finalizes the build of the {@link WebScraper}.
      * @return new {@link WebScraper} instance.
+     * @throws IllegalStateException if {@link WebScraperBuilder#of(StandardHTMLParser...)} or
+     * {@link WebScraperBuilder#of(HTMLParser...)} are used as factories.
      * @see WebScraperBuilder
-     * @see WebScraper
      */
-    public WebScraper build() {
-        if(threadHandler == null) threadHandler = new ThreadHandler(1);
+    public WebScraper build() throws IllegalStateException {
         if(languagePattern != null)
             contentHandler.restrictLanguage(languagePattern);
         if(limit > 0) contentHandler.setLimit(limit);
         if(linkParser != null)
             contentHandler.setCustomLinkParser(linkParser);
         if(optionHandler.isPresent(Option.SAVE_LINKS))
-            linkParser.setShouldSave(true);
+            linkParser.enableSaving();
         if(optionHandler.isPresent(Option.SAVE_PARSED_ELEMENTS))
-            contentHandler.setContentSaving(true);
+            contentHandler.enableSavingForAllParsers();
         if(optionHandler.isPresent(Option.STAY_ON_WEBSITE))
             linkParser.restrictToSite();
-        return new WebScraper(initialURL, optionHandler, contentHandler, threadHandler);
+        return new WebScraper(initialURL, optionHandler, contentHandler, nThreads);
     }
 
     /**
@@ -195,9 +180,6 @@ public final class WebScraperBuilder {
      * @return this {@link WebScraperBuilder} instance.
      * @throws NullPointerException if the url specified is null.
      * @throws IllegalArgumentException if the current {@link LinkParser} does not match the url.
-     * @see WebScraperBuilder
-     * @see LinkParser
-     * @see WebScraper
      */
     public WebScraperBuilder setInitialURL(String url) throws IllegalArgumentException, NullPointerException {
         contentHandler.getLinkParser().verify(url);
