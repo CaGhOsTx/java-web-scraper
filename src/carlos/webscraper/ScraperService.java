@@ -5,6 +5,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -14,6 +16,7 @@ final public class ScraperService implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -4106870085490275339L;
+    private final ExecutorService service = Executors.newCachedThreadPool();
     private final List<WebScraper> scrapers;
     private static int globalID;
     private final int id;
@@ -92,8 +95,12 @@ final public class ScraperService implements Serializable {
             String in;
             do {
                 in = sc.nextLine();
+                if(in.equals("kill")) {
+                    scrapers.forEach(WebScraper::kill);
+                    break;
+                }
                 try {
-                    action(in);
+                    service.execute(command(in));
                 } catch (IllegalStateException e) {
                     System.out.println(e.getMessage());
                 }
@@ -101,19 +108,20 @@ final public class ScraperService implements Serializable {
         }
     }
 
-    private void action(String in) {
-        switch(fromString(in)) {
-            case NAME -> System.out.println(this);
-            case HELP -> help();
-            case INFO -> info();
-            case START -> startScrapers();
-            case STOP -> stop();
-            case TIME -> time();
-            case LIST -> printScraperNames();
-            case SERIALIZE -> System.out.println(serialize());
-            case START_SCRAPER -> actionOnScraper(parseOptions(in), WebScraper::start);
-            case STOP_SCRAPER -> actionOnScraper(parseOptions(in), WebScraper::stop);
-        }
+    private Runnable command(String in) {
+        return switch(fromString(in)) {
+            case NAME -> () -> System.out.println(this);
+            case HELP -> this::help;
+            case INFO -> this::info;
+            case START -> this::startScrapers;
+            case STOP -> this::stop;
+            case TIME -> this::time;
+            case LIST -> this::printScraperNames;
+            case SERIALIZE -> () -> System.out.println(serialize());
+            case START_SCRAPER -> () -> actionOnScraper(parseOptions(in), WebScraper::start);
+            case STOP_SCRAPER -> () -> actionOnScraper(parseOptions(in), WebScraper::stop);
+            default -> throw new IllegalStateException("Unexpected value: " + fromString(in));
+        };
     }
 
 
@@ -189,5 +197,9 @@ final public class ScraperService implements Serializable {
         return "ScraperService" + id + "{" +
                 "scrapers=" + scrapers +
                 '}';
+    }
+
+    public void add(WebScraper scraper) {
+        scrapers.add(scraper);
     }
 }

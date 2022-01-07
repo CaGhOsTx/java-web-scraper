@@ -67,8 +67,8 @@ public abstract class LinkParser extends HTMLParser {
 
     @Override
     final public boolean onAddFilter(String element) {
-        return  (stayOnSite && matches(element, siteIdentifier))
-                || (languagePattern == null || matches(element, languagePattern.PATTERN));
+        return  !stayOnSite || matches(element, siteIdentifier)
+                && languagePattern == null || matches(element, languagePattern.PATTERN);
     }
 
     private boolean matches(String element, Pattern pattern) {
@@ -88,7 +88,7 @@ public abstract class LinkParser extends HTMLParser {
      * @see LinkParser
      */
     final synchronized void saveLinks(Queue<String> links, WebScraper webScraper) throws IOException {
-        saveContent();
+        flush();
         if(!links.isEmpty()) {
             try (var w = newBufferedWriter(Paths.get(webScraper + "$unvisited" + super.pathToContent()), openOption())) {
                 for (var link : links) {
@@ -109,9 +109,9 @@ public abstract class LinkParser extends HTMLParser {
      */
     final synchronized void addVisitedLink(String link, int limit) {
         int previousSize = cache.size();
-        cache.add(link);
-        if(newDataOverflowsLimit(limit)) trimToSize(limit);
-        if(shouldSave && cacheOverflowing()) flush();
+        if(dataWithinLimit(limit))
+            cache.add(link);
+        if(cacheOverflowing()) flushCache();
         collected += cache.size() - previousSize;
     }
 

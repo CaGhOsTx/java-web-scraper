@@ -6,30 +6,33 @@ import java.util.List;
 import static java.lang.Thread.currentThread;
 
 /**
- * Class which can be used as template for concurrency programs.
+ * Class which implements concurrency for parallel computing
+ * of a repetitive task.
+ * @author Carlos Milkovic
+ * @version 1.1
  */
-public abstract class ThreadManager<T> {
+public abstract class RepetitiveTaskService<T> {
     private final List<Thread> threadPool;
     private volatile boolean stop = true;
     private Runnable task;
     final int initialSize;
 
-    public ThreadManager() {
+    public RepetitiveTaskService() {
         threadPool = new ArrayList<>();
         initialSize = 0;
     }
 
-    public ThreadManager(int n) {
+    public RepetitiveTaskService(int n) {
         threadPool = new ArrayList<>(n);
         initialSize = n;
     }
 
     /**
-     * Submits the following Object to this {@link ThreadManager}.
+     * Submits the following Object to this {@link RepetitiveTaskService}.
      * @param t derivative object on which to compute the implemented task.
-     * @return this {@link ThreadManager} instance.
+     * @return this {@link RepetitiveTaskService} instance.
      */
-    public ThreadManager<T> submit(T t) {
+    public RepetitiveTaskService<T> submit(T t) {
         this.task = () -> loop(t);
         return this;
     }
@@ -42,8 +45,8 @@ public abstract class ThreadManager<T> {
     public abstract boolean condition(T t);
 
     /**
-     * The {@link ThreadManager} will compute this action
-     * iteratively until the {@link ThreadManager#condition(Object)} is met,
+     * The {@link RepetitiveTaskService} will compute this action
+     * iteratively until the {@link RepetitiveTaskService#condition(Object)} is met,
      * or has not been signalled to stop.
      * @param t derivative object on which to perform the action.
      */
@@ -57,12 +60,11 @@ public abstract class ThreadManager<T> {
     public void close(T t) {}
 
     /**
-     * Stops this {@link ThreadManager}.<br/>
+     * Stops this {@link RepetitiveTaskService}.<br/>
      */
     final public synchronized void stop() {
         stop = true;
         while(isRunning()) {
-            System.out.println("waiting..." + size());
             try {
                 this.wait(1000);
             } catch (InterruptedException e) {
@@ -73,7 +75,7 @@ public abstract class ThreadManager<T> {
     }
 
     /**
-     * Starts this {@link ThreadManager}.
+     * Starts this {@link RepetitiveTaskService}.
      */
     final public void start() {
         stop = false;
@@ -104,6 +106,7 @@ public abstract class ThreadManager<T> {
     final public void allocateThreads(int n) {
         for (int i = threadPool.size(); i < n; i++) {
             threadPool.add(new Thread(task));
+            threadPool.get(i).setDaemon(true);
             threadPool.get(i).start();
         }
     }

@@ -5,18 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a2b93da5-f13f-4b8a-a660-d86e511bfdca" name="Changes" comment="Commented most of the public code.">
-      <change afterPath="$PROJECT_DIR$/src/carlos/utilities/ThreadManager.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/utilities/ThreadManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/utilities/RepetitiveTaskService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/Action.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/Action.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/ContentHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/ContentHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/HTMLParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/HTMLParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/LanguagePattern.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/LanguagePattern.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/LinkParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/LinkParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/Parsable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/Parsable.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/ScraperService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/ScraperService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/StandardHTMLParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/StandardHTMLParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/ThreadHandler.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/WebScraper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/WebScraper.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/WebScraperBuilder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/WebScraperBuilder.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,9 +44,6 @@
       <filtered-out-file-type name="TAG" />
       <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
     </file-type-list>
-  </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="jar://$USER_HOME$/Library/Java/JavaVirtualMachines/openjdk-17.0.1/Contents/Home/lib/src.zip!/java.base/java/lang/Runtime.java" root0="SKIP_INSPECTION" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -240,7 +234,6 @@
         </entry>
       </map>
     </option>
-    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="..." />

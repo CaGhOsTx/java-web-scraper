@@ -96,7 +96,7 @@ final class ContentHandler implements Serializable {
      */
     void saveAllContent() throws IOException {
         for(var parser : contributionsToParser.keySet())
-            parser.saveContent();
+            parser.flush();
     }
 
     /**

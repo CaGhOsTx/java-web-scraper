@@ -1,6 +1,6 @@
 package carlos.webscraper;
 
-import carlos.utilities.ThreadManager;
+import carlos.utilities.RepetitiveTaskService;
 
 import java.io.*;
 import java.net.URI;
@@ -28,14 +28,14 @@ public final class WebScraper implements Serializable {
     private final Queue<String> unvisitedLinks;
     private final OptionHandler optionHandler;
     private final ContentHandler contentHandler;
-    private transient ThreadManager<WebScraper> threadManager;
+    private transient RepetitiveTaskService<WebScraper> service;
     private final String startURL;
     WebScraper(String startURL, OptionHandler optionHandler, ContentHandler contentHandler, int nThreads) {
         this.startURL = startURL;
         this.optionHandler = optionHandler;
         this.contentHandler = contentHandler;
         unvisitedLinks = new ConcurrentLinkedQueue<>();
-        threadManager = getManager(nThreads);
+        service = getService(nThreads);
         id = ++globalID;
 
     }
@@ -47,13 +47,13 @@ public final class WebScraper implements Serializable {
         if(isRunning()) System.err.println(this + " is already running!");
         else {
             try {
-                addUnvisitedLinksToQueue(getHTML(startURL), startURL);
-                threadManager.submit(this).start();
+                addUnvisitedLinks(getHTML(startURL), startURL);
+                service.start();
                 System.out.println(this + " STARTED");
             } catch (PageWithoutLinksException e) {
                 if(unvisitedLinks.isEmpty())
                     System.err.println("UNABLE TO START " + this);
-                else threadManager.submit(this).start();
+                else service.start();
             }
         }
     }
@@ -62,7 +62,7 @@ public final class WebScraper implements Serializable {
      * Stops this {@link WebScraper}.
      */
     public void stop() {
-        threadManager.stop();
+        service.stop();
     }
 
     /**
@@ -76,7 +76,8 @@ public final class WebScraper implements Serializable {
      */
     @Deprecated
     static WebScraper deserialize(Path path) throws IOException, ClassNotFoundException {
-        return  (WebScraper) new ObjectInputStream(new BufferedInputStream(new FileInputStream(path.toFile()))).readObject();
+        return  (WebScraper) new ObjectInputStream(
+                new BufferedInputStream(new FileInputStream(path.toFile()))).readObject();
     }
 
     /**
@@ -119,13 +120,13 @@ public final class WebScraper implements Serializable {
     @Serial
     private void writeObject(ObjectOutputStream out) throws IOException, InterruptedException {
         out.defaultWriteObject();
-        out.writeInt(threadManager.size());
+        out.writeInt(service.size());
     }
 
     @Serial
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        threadManager = getManager(in.readInt());
+        service = getService(in.readInt());
     }
 
     /**
@@ -163,9 +164,9 @@ public final class WebScraper implements Serializable {
      * (needed for {@link PageWithoutLinksException})
      * @param html page from which the links will be parsed.
      */
-    private void tryToAddNewLinks(String link, String html) {
+    private void tryAddingNewLinks(String link, String html) {
         try {
-            addUnvisitedLinksToQueue(html, link);
+            addUnvisitedLinks(html, link);
         } catch(PageWithoutLinksException e) {
             if(optionHandler.isPresent(DEBUG_MODE)) System.err.println(e.getMessage());
         }
@@ -193,10 +194,8 @@ public final class WebScraper implements Serializable {
      * @return the next link in sequence.
      */
     private String nextLink() throws IllegalStateException {
-        if(unvisitedLinks.isEmpty()) {
-            if(threadManager.isLastThread()) threadManager.close(this);
+        if(unvisitedLinks.isEmpty())
             throw new IllegalStateException(Thread.currentThread().getName() + " reached end!" + "(" + this + ")");
-        }
         var link = unvisitedLinks.poll();
         contentHandler.addLink(link);
         printDebugNL();
@@ -209,7 +208,7 @@ public final class WebScraper implements Serializable {
      * @param url link to specified HTML.
      * @throws PageWithoutLinksException if no links were parsed.
      */
-    private void addUnvisitedLinksToQueue(String html, String url) throws PageWithoutLinksException {
+    private void addUnvisitedLinks(String html, String url) throws PageWithoutLinksException {
         var links = contentHandler.getLinks(html);
         if (links.isEmpty()) throw new PageWithoutLinksException(url);
         links.stream().filter(contentHandler::linkNotVisited).forEach(unvisitedLinks::add);
@@ -268,7 +267,7 @@ public final class WebScraper implements Serializable {
      * @return true if it is running.
      */
     public boolean isRunning() {
-        return threadManager.isRunning();
+        return service.isRunning();
     }
 
     /**
@@ -282,8 +281,8 @@ public final class WebScraper implements Serializable {
         return sb.substring(0, sb.length() - 1);
     }
 
-    private ThreadManager<WebScraper> getManager(int n) {
-        return new ThreadManager<WebScraper>(n) {
+    private RepetitiveTaskService<WebScraper> getService(int n) {
+        return new RepetitiveTaskService<WebScraper>(n) {
             @Override
             public boolean condition(WebScraper webScraper) {
                 return optionHandler.isPresent(UNLIMITED) || contentHandler.notAllAreCollected();
@@ -294,7 +293,7 @@ public final class WebScraper implements Serializable {
                 var link = nextLink();
                 String html = getHTML(link);
                 if (unvisitedLinks.size() < CACHE_LIMIT)
-                    tryToAddNewLinks(link, html);
+                    tryAddingNewLinks(link, html);
                 contentHandler.addAllNewContent(html);
                 printDebugMain(contentHandler.getParsers());
             }
@@ -312,6 +311,10 @@ public final class WebScraper implements Serializable {
                 printFinished();
             }
         }.submit(this);
+    }
+
+    void kill() {
+        service.close(this);
     }
 
     private void appendLinks(StringBuilder sb) {

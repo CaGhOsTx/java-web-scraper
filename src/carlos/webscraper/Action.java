@@ -18,7 +18,8 @@ enum Action {
     SERIALIZE("stops and serializes this service."),
     LIST("returns names of contained web scrapers"),
     START_SCRAPER("starts the scraper defined by given options"),
-    STOP_SCRAPER("stops the scraper with the given name");
+    STOP_SCRAPER("stops the scraper with the given name"),
+    KILL("shuts this service down forcefully");
 
     final String info;
     Consumer<ScraperService> consumer;
