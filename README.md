@@ -1,4 +1,4 @@
-# WebScraper
+# WebScrapingService
 API designed for breadth-first-search web scraping, mainly data collection.
 <ul>
   <li> Implemented abstract classes and interfaces to provide users the ability to provide custom 
