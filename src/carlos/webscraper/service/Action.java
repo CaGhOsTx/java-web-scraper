@@ -1,4 +1,4 @@
-package carlos.webscraper;
+package carlos.webscraper.service;
 
 import java.util.Collections;
 import java.util.List;

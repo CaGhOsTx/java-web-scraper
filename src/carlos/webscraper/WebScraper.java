@@ -1,18 +1,25 @@
 package carlos.webscraper;
 
-import carlos.utilities.RepetitiveTaskService;
+import carlos.utilities.SingleTaskService;
+import carlos.webscraper.exceptions.PageWithoutLinksException;
+import carlos.webscraper.exceptions.ReachedEndException;
+import carlos.webscraper.parser.HTMLParser;
+import carlos.webscraper.parser.link.LinkParser;
+import carlos.webscraper.service.ScraperService;
 
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Pattern;
 
-import static carlos.webscraper.HTMLParser.CACHE_LIMIT;
+import static carlos.webscraper.parser.HTMLParser.CACHE_LIMIT;
 import static carlos.webscraper.Option.*;
+import static java.lang.Thread.MAX_PRIORITY;
 import static java.lang.Thread.currentThread;
 
 /**
@@ -24,19 +31,25 @@ public final class WebScraper implements Serializable {
     @Serial
     private static final long serialVersionUID = 5440710515833287425L;
     private static int globalID = 0;
-    private final int id;
-    private final Queue<String> unvisitedLinks;
+    private final int ID;
+    private Queue<String> unvisitedLinks;
     private final OptionHandler optionHandler;
     private final ContentHandler contentHandler;
-    private transient RepetitiveTaskService<WebScraper> service;
+    private transient SingleTaskService<WebScraper> service;
     private final String startURL;
+
+    static {
+        System.setProperty("sun.net.client.defaultReadTimeout", "5000");
+        System.setProperty("sun.net.client.defaultConnectTimeout", "5000");
+    }
+
     WebScraper(String startURL, OptionHandler optionHandler, ContentHandler contentHandler, int nThreads) {
         this.startURL = startURL;
         this.optionHandler = optionHandler;
         this.contentHandler = contentHandler;
         unvisitedLinks = new ConcurrentLinkedQueue<>();
         service = getService(nThreads);
-        id = ++globalID;
+        ID = ++globalID;
 
     }
 
@@ -48,12 +61,12 @@ public final class WebScraper implements Serializable {
         else {
             try {
                 addUnvisitedLinks(getHTML(startURL), startURL);
-                service.start();
+                service.start(this);
                 System.out.println(this + " STARTED");
-            } catch (PageWithoutLinksException e) {
+            } catch (PageWithoutLinksException | InterruptedException e) {
                 if(unvisitedLinks.isEmpty())
                     System.err.println("UNABLE TO START " + this);
-                else service.start();
+                else service.start(this);
             }
         }
     }
@@ -62,7 +75,7 @@ public final class WebScraper implements Serializable {
      * Stops this {@link WebScraper}.
      */
     public void stop() {
-        service.stop();
+        service.stop(this);
     }
 
     /**
@@ -101,9 +114,13 @@ public final class WebScraper implements Serializable {
         return Path.of("WebScraper_from " + startURL).toAbsolutePath();
     }
 
+    boolean hasParser(HTMLParser parser) {
+        return contentHandler.hasParser(parser);
+    }
+
     @Override
     public String toString() {
-        return "WebScraper_" + id + "@" + getDomain(startURL);
+        return "WebScraper_" + ID + "@" + getDomain(startURL);
     }
 
     /**
@@ -144,7 +161,8 @@ public final class WebScraper implements Serializable {
      * @see LinkParser
      */
     private void saveLinks() throws IOException {
-        contentHandler.getLinkParser().saveLinks(unvisitedLinks, this);
+        contentHandler.saveUnvisitedLinks(this);
+        contentHandler.getLinkParser().flushUnvisited(unvisitedLinks, this);
         if (optionHandler.isPresent(DEBUG_MODE))
             System.out.println("Links saved");
     }
@@ -153,9 +171,9 @@ public final class WebScraper implements Serializable {
      * Outputs to the console that this {@link WebScraper} is finalized.
      */
     private void printFinished() {
-        System.out.println("--------------");
-        System.out.println(this + " CLOSED");
-        System.out.println("--------------");
+        System.out.println("-----------------");
+        System.out.println(this + " FINISHED");
+        System.out.println("-----------------");
     }
 
     /**
@@ -190,12 +208,15 @@ public final class WebScraper implements Serializable {
 
     /**
      * Retrieves the next link in {@link WebScraper#unvisitedLinks} queue.
-     * @throws IllegalStateException if the queue is empty i.e. there is nowhere else to go.
+     * @throws ReachedEndException if the queue is empty i.e. there is nowhere else to go.
      * @return the next link in sequence.
      */
-    private String nextLink() throws IllegalStateException {
-        if(unvisitedLinks.isEmpty())
-            throw new IllegalStateException(Thread.currentThread().getName() + " reached end!" + "(" + this + ")");
+    private synchronized String nextLink() throws ReachedEndException {
+        if(unvisitedLinks.isEmpty()) {
+            if(Files.exists(contentHandler.getLinkParser().pathToContent()))
+                unvisitedLinks = contentHandler.loadUnvisitedLinks(this);
+            else throw new ReachedEndException(this);
+        }
         var link = unvisitedLinks.poll();
         contentHandler.addLink(link);
         printDebugNL();
@@ -209,9 +230,15 @@ public final class WebScraper implements Serializable {
      * @throws PageWithoutLinksException if no links were parsed.
      */
     private void addUnvisitedLinks(String html, String url) throws PageWithoutLinksException {
+        int UNVISITED_LINK_LIMIT = 5_000_000;
+        if(unvisitedLinks.size() >= UNVISITED_LINK_LIMIT) cacheLinks();
         var links = contentHandler.getLinks(html);
-        if (links.isEmpty()) throw new PageWithoutLinksException(url);
+        if (links.isEmpty()) throw new PageWithoutLinksException(this, url);
         links.stream().filter(contentHandler::linkNotVisited).forEach(unvisitedLinks::add);
+    }
+
+    private synchronized void cacheLinks() {
+        contentHandler.getLinkParser().flushUnvisited(unvisitedLinks, this);
     }
 
     private void printDebugNL() {
@@ -226,8 +253,8 @@ public final class WebScraper implements Serializable {
      * @param url url to be used to request HTML.
      * @return HTML.
      */
-    private String getHTML(String url) {
-        var html = new StringBuilder();
+    private String getHTML(String url) throws InterruptedException {
+        var html = new StringBuilder(500_000);
         debugGetHTML(url);
         try (var reader = new BufferedInputStream(new URI(url).toURL().openStream())) {
             int b;
@@ -247,13 +274,10 @@ public final class WebScraper implements Serializable {
      * Makes the entrant {@link Thread} idle for 30 seconds if the target server is getting too many requests.
      * @param e {@link Exception} to be tested for code "429"
      */
-    private void ifTooManyRequestsErrorSleep(Exception e) {
+    private void ifTooManyRequestsErrorSleep(Exception e) throws InterruptedException {
         if(e.getMessage().contains(" 429 ")) {
-            try {
-                Thread.sleep(30000);
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
+            System.out.println(this + " is sending too many requests");
+            Thread.sleep(30_000);
         }
     }
 
@@ -281,15 +305,15 @@ public final class WebScraper implements Serializable {
         return sb.substring(0, sb.length() - 1);
     }
 
-    private RepetitiveTaskService<WebScraper> getService(int n) {
-        return new RepetitiveTaskService<WebScraper>(n) {
+    private SingleTaskService<WebScraper> getService(int n) {
+        return new SingleTaskService<>(n) {
             @Override
             public boolean condition(WebScraper webScraper) {
                 return optionHandler.isPresent(UNLIMITED) || contentHandler.notAllAreCollected();
             }
 
             @Override
-            public void action(WebScraper webScraper) {
+            public void action(WebScraper webScraper) throws InterruptedException {
                 var link = nextLink();
                 String html = getHTML(link);
                 if (unvisitedLinks.size() < CACHE_LIMIT)
@@ -310,11 +334,7 @@ public final class WebScraper implements Serializable {
                 }
                 printFinished();
             }
-        }.submit(this);
-    }
-
-    void kill() {
-        service.close(this);
+        };
     }
 
     private void appendLinks(StringBuilder sb) {
@@ -343,22 +363,4 @@ public final class WebScraper implements Serializable {
                 .append('\n');
     }
 
-    /**
-     * {@link RuntimeException} thrown when the HTML from a specified URL does not contain identifiable links.
-     */
-    private final class PageWithoutLinksException extends RuntimeException {
-
-        @Serial
-        private static final long serialVersionUID = 7244117343903569290L;
-        private final String link;
-
-        PageWithoutLinksException(String link) {
-            this.link = link;
-        }
-
-        @Override
-        public String getMessage() {
-            return WebScraper.this + " page has no identifiable links! " + " LINK TO PAGE -> " + link;
-        }
-    }
 }

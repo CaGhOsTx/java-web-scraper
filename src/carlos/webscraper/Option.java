@@ -8,7 +8,7 @@ package carlos.webscraper;
  *     <li>SAVE_PARSED_ELEMENTS - enables saving for all parsers</li>
  *     <li>STAY_ON_WEBSITE      - makes the implementing link parser filter out
  *     any links not from the same domain as {@link WebScraperBuilder#initialURL}</li>
- *     <li>SERIALIZE_ON_CLOSE   - serialized the {@link WebScraper} on close. <b>DEPRECATED</b></li>
+ *     <li>SERIALIZE_ON_CLOSE   - serializes the {@link WebScraper} on close. <b>DEPRECATED</b></li>
  * </ul>
  * for use with {@link WebScraperBuilder#withOptions(Option...)}
  * @author Carlos Milkovic
@@ -22,5 +22,5 @@ public enum Option {
     UNLIMITED,
     STAY_ON_WEBSITE,
     @Deprecated
-    SERIALIZE_ON_CLOSE;
+    SERIALIZE_ON_CLOSE
 }

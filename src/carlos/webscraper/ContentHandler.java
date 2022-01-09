@@ -1,13 +1,19 @@
 package carlos.webscraper;
 
+import carlos.webscraper.exceptions.ReachedEndException;
+import carlos.webscraper.parser.HTMLParser;
+import carlos.webscraper.parser.link.LanguagePattern;
+import carlos.webscraper.parser.link.LinkParser;
+
 import java.io.IOException;
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toConcurrentMap;
 
@@ -20,7 +26,6 @@ import static java.util.stream.Collectors.toConcurrentMap;
 final class ContentHandler implements Serializable {
     @Serial
     private static final long serialVersionUID = 395515185246116492L;
-    private int DATA_LIMIT = 1000_000;
     private LinkParser linkParser;
     private final Map<HTMLParser, Integer> contributionsToParser;
 
@@ -34,6 +39,28 @@ final class ContentHandler implements Serializable {
     ContentHandler(HTMLParser... parsers) {
         contributionsToParser = Arrays.stream(parsers).collect(toConcurrentMap(collectable -> collectable, i -> 0));
         linkParser = LinkParser.newStandardLinkParser();
+    }
+
+    Queue<String> loadUnvisitedLinks(WebScraper scraper) throws ReachedEndException {
+        Queue<String> q = null;
+        try {
+            q = Files.lines(getLinkParser().pathToUnvisited(scraper))
+                    .limit(1_000_000)
+                    .collect(Collectors.toCollection(ConcurrentLinkedQueue::new));
+            if(q.isEmpty()) throw new ReachedEndException(scraper);
+            overwriteUnvisitedFile(scraper, q);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return q != null ? q : new ConcurrentLinkedQueue<>();
+    }
+
+    private void overwriteUnvisitedFile(WebScraper scraper, Queue<String> q) throws IOException {
+        getLinkParser().flushUnvisited(loadUntouchedLinks(scraper, q), scraper, StandardOpenOption.WRITE);
+    }
+
+    private List<String> loadUntouchedLinks(WebScraper scraper, Queue<String> q) throws IOException {
+        return Files.lines(getLinkParser().pathToUnvisited(scraper)).skip(q.size()).toList();
     }
 
     /**
@@ -77,8 +104,8 @@ final class ContentHandler implements Serializable {
         contributionsToParser.replaceAll(updateContributions(html));
     }
 
-    private BiFunction<HTMLParser, Integer, Integer> updateContributions(String html) {
-        return (parser, contribution) -> contributionsToParser.get(parser) + parser.addContentFrom(html, DATA_LIMIT);
+    private synchronized BiFunction<HTMLParser, Integer, Integer> updateContributions(String html) {
+        return (parser, contribution) -> contributionsToParser.get(parser) + parser.addContentFrom(html);
     }
 
     void enableSavingForAllParsers() {
@@ -92,11 +119,14 @@ final class ContentHandler implements Serializable {
 
     /**
      * Saves data stored in each {@link HTMLParser} cache controlled by this {@link ContentHandler} instance.
-     * @throws IOException if the data could not be saved for any reason.
      */
-    void saveAllContent() throws IOException {
+    synchronized void saveAllContent() {
         for(var parser : contributionsToParser.keySet())
-            parser.flush();
+            parser.flush(parser.pathToContent());
+    }
+
+    void saveUnvisitedLinks(WebScraper scraper) {
+        getLinkParser().flush(getLinkParser().pathToUnvisited(scraper));
     }
 
     /**
@@ -121,24 +151,18 @@ final class ContentHandler implements Serializable {
     }
 
     /**
-     * @return true if not all parsers reached the {@link ContentHandler#DATA_LIMIT}.
+     * @return true if not all parsers reached their limit.
      */
     boolean notAllAreCollected() {
-        return !contributionsToParser.keySet().stream().allMatch(content -> content.reachedLimit(DATA_LIMIT));
+        return !contributionsToParser.keySet().stream().allMatch(HTMLParser::reachedLimit);
     }
 
     void addLink(String link) {
-        linkParser.addVisitedLink(link, DATA_LIMIT);
+        linkParser.addVisitedLink(link);
     }
 
-    /**
-     * Sets this {@link ContentHandler#DATA_LIMIT}.
-     * @param limit limit to be set.
-     * @throws IllegalArgumentException if limit is not positive.
-     */
-    void setLimit(int limit) throws IllegalArgumentException {
-        if(limit <= 0) throw new IllegalArgumentException("limit must be positive!");
-        DATA_LIMIT = limit;
-    }
 
+    boolean hasParser(HTMLParser parser) {
+        return contributionsToParser.containsKey(parser);
+    }
 }

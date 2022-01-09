@@ -1,4 +1,6 @@
-package carlos.webscraper;
+package carlos.webscraper.parser.link;
+
+import carlos.webscraper.WebScraperBuilder;
 
 import java.util.regex.Pattern;
 

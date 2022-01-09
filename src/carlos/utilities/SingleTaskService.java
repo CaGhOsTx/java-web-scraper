@@ -11,30 +11,21 @@ import static java.lang.Thread.currentThread;
  * @author Carlos Milkovic
  * @version 1.1
  */
-public abstract class RepetitiveTaskService<T> {
+public abstract class SingleTaskService<T> {
     private final List<Thread> threadPool;
-    private volatile boolean stop = true;
     private Runnable task;
     final int initialSize;
+    private static int gID = 0;
+    private final int ID = ++gID;
 
-    public RepetitiveTaskService() {
+    public SingleTaskService() {
         threadPool = new ArrayList<>();
         initialSize = 0;
     }
 
-    public RepetitiveTaskService(int n) {
+    public SingleTaskService(int n) {
         threadPool = new ArrayList<>(n);
         initialSize = n;
-    }
-
-    /**
-     * Submits the following Object to this {@link RepetitiveTaskService}.
-     * @param t derivative object on which to compute the implemented task.
-     * @return this {@link RepetitiveTaskService} instance.
-     */
-    public RepetitiveTaskService<T> submit(T t) {
-        this.task = () -> loop(t);
-        return this;
     }
 
     /**
@@ -45,12 +36,12 @@ public abstract class RepetitiveTaskService<T> {
     public abstract boolean condition(T t);
 
     /**
-     * The {@link RepetitiveTaskService} will compute this action
-     * iteratively until the {@link RepetitiveTaskService#condition(Object)} is met,
+     * The {@link SingleTaskService} will compute this action
+     * iteratively until the {@link SingleTaskService#condition(Object)} is met,
      * or has not been signalled to stop.
      * @param t derivative object on which to perform the action.
      */
-    public abstract void action(T t);
+    public abstract void action(T t) throws InterruptedException;
 
     /**
      * <B>OPTIONAL</B> <br/>
@@ -60,25 +51,25 @@ public abstract class RepetitiveTaskService<T> {
     public void close(T t) {}
 
     /**
-     * Stops this {@link RepetitiveTaskService}.<br/>
+     * Stops this {@link SingleTaskService}.<br/>
      */
-    final public synchronized void stop() {
-        stop = true;
+    final public synchronized void stop(T t) {
+        threadPool.forEach(Thread::interrupt);
         while(isRunning()) {
             try {
-                this.wait(1000);
+                this.wait(1_000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                currentThread().interrupt();
             }
         }
-        stop = false;
+        close(t);
     }
 
     /**
-     * Starts this {@link RepetitiveTaskService}.
+     * Starts this {@link SingleTaskService}.
      */
-    final public void start() {
-        stop = false;
+    final public void start(T t) {
+        this.task = () -> loop(t);
         allocateThreads(initialSize);
     }
 
@@ -88,15 +79,15 @@ public abstract class RepetitiveTaskService<T> {
      */
     final public synchronized void deallocateThreads(int n) {
         int required = threadPool.size() - n;
+        for(int i = 0; i < n; i++)
+            threadPool.get(i).interrupt();
         while(threadPool.size() > required) {
-            stop = true;
             try {
-                this.wait();
+                this.wait(1_000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        stop = false;
     }
 
     /**
@@ -105,7 +96,7 @@ public abstract class RepetitiveTaskService<T> {
      */
     final public void allocateThreads(int n) {
         for (int i = threadPool.size(); i < n; i++) {
-            threadPool.add(new Thread(task));
+            threadPool.add(new Thread(task, "STS" + ID + "--Thread-" + i));
             threadPool.get(i).setDaemon(true);
             threadPool.get(i).start();
         }
@@ -126,32 +117,26 @@ public abstract class RepetitiveTaskService<T> {
         try {
             while (condition(t)) {
                 action(t);
-                if (shouldStop())
+                if (currentThread().isInterrupted())
                     break;
             }
         }
         catch (Exception e) {
-            System.err.println("CRASH: " + e.getMessage());
-            threadPool.remove(currentThread());
+            if(!(e instanceof InterruptedException))
+                e.printStackTrace();
         }
-        if (isLastThread()) {
-            close(t);
+        finally {
             synchronized (this) {
+                threadPool.remove(currentThread());
                 this.notifyAll();
             }
         }
     }
 
-    /**
-     * @return true if the entrant thread should stop.
-     */
-    private boolean shouldStop() {
-        if(stop)
-            threadPool.remove(currentThread());
-        return stop;
-    }
-
-    final public synchronized boolean isLastThread() {
-        return threadPool.isEmpty();
+    @Override
+    public String toString() {
+        return "SingleTaskService{" +
+                "threadPool=" + threadPool +
+                '}';
     }
 }

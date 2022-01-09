@@ -1,12 +1,14 @@
-package carlos.webscraper;
+package carlos.webscraper.parser;
+
+import carlos.webscraper.parser.link.LinkParser;
 
 import java.io.Serializable;
 
 /**
  * The reason for this interface's existence is to emphasize which methods can be over-ridden
  * <ul>
- *     <li>{@link Parsable#transform(String)}</li>
- *     <li>{@link Parsable#onAddFilter(String)}</li>
+ *     <li>{@link Parser#transform(String)}</li>
+ *     <li>{@link Parser#onAddFilter(String)}</li>
  * </ul>
  * It also provides default implementations for optional methods so that users of
  * this API do not have to implement them if not required.<br/>
@@ -19,7 +21,7 @@ import java.io.Serializable;
  * @author Carlos Milkovic
  * @version a0.9
  */
-interface Parsable extends Serializable {
+public interface Parser extends Serializable {
 
     /**
      * String regex with which classes that implement this interface will parse raw HTML. <br/>
@@ -30,7 +32,7 @@ interface Parsable extends Serializable {
 
     /**
      * Method which pre-processes the raw HTML {@link String} prior to parsing. <br/>
-     * Implement if pre-processing the HTML file results in a simpler final {@link Parsable#pattern()}.
+     * Implement if pre-processing the HTML file results in a simpler final {@link Parser#pattern()}.
      * @param html raw HTML {@link String} to be pre-processed.
      * @return transformed HTML.
      */

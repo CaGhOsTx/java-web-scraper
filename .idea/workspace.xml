@@ -4,16 +4,33 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a2b93da5-f13f-4b8a-a660-d86e511bfdca" name="Changes" comment="Commented most of the public code.">
+    <list default="true" id="a2b93da5-f13f-4b8a-a660-d86e511bfdca" name="Changes" comment="from pc.">
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/carlos/utilities/package-info.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/exceptions/PageWithoutLinksException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/exceptions/ReachedEndException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/package-info.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/Parser.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/link/package-info.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/package-info.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/service/package-info.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/utilities/package-info.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/module-info.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/utilities/ThreadManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/utilities/RepetitiveTaskService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/Action.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/Action.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/utilities/RepetitiveTaskService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/utilities/SingleTaskService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/Action.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/service/Action.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/ContentHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/ContentHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/HTMLParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/HTMLParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/LinkParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/LinkParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/ScraperService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/ScraperService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/HTMLParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/HTMLParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/HTMLTransformer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/utilities/HTMLTransformer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/LanguagePattern.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/link/LanguagePattern.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/LinkParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/link/LinkParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/Option.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/Option.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/Parsable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/LimitedParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/ScraperService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/service/ScraperService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/StandardHTMLParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/StandardParser.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/WebScraper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/WebScraper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/WebScraperBuilder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/WebScraperBuilder.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,9 +40,11 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Interface" />
+        <option value="module-info" />
+        <option value="package-info" />
         <option value="Enum" />
         <option value="Class" />
+        <option value="Interface" />
       </list>
     </option>
   </component>
@@ -119,6 +138,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last.edited.regexp" value="https://en.wikipedia.com/wiki/dirt" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/carlos" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
@@ -127,25 +147,27 @@
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
-    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+    <property name="settings.editor.selected.configurable" value="Errors" />
   </component>
   <component name="RecentsManager">
     <key name="CreateClassDialog.RecentsKey">
+      <recent name="carlos.webscraper.parser" />
       <recent name="carlos.webcrawler" />
       <recent name="" />
     </key>
     <key name="MoveInnerDialog.RECENTS_KEY">
+      <recent name="carlos.webscraper" />
       <recent name="carlos.webcrawler" />
       <recent name="" />
     </key>
   </component>
   <component name="RunManager" selected="Application.Main (1)">
-    <configuration name="Main (1)" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="carlos.Main" />
+    <configuration name="Main" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="Main" />
       <module name="CS210 Project" />
       <extension name="coverage">
         <pattern>
-          <option name="PATTERN" value="carlos.*" />
+          <option name="PATTERN" value=".*" />
           <option name="ENABLED" value="true" />
         </pattern>
       </extension>
@@ -196,6 +218,10 @@
       <workItem from="1640974044280" duration="5137000" />
       <workItem from="1641151935895" duration="21063000" />
       <workItem from="1641330553851" duration="71773000" />
+      <workItem from="1641580792073" duration="2000" />
+      <workItem from="1641674101734" duration="13738000" />
+      <workItem from="1641699880056" duration="6844000" />
+      <workItem from="1641766346200" duration="3361000" />
     </task>
     <task id="LOCAL-00001" summary="...">
       <created>1641012272912</created>
@@ -218,7 +244,14 @@
       <option name="project" value="LOCAL" />
       <updated>1641402712553</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="from pc.">
+      <created>1641515482528</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1641515482528</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -239,7 +272,8 @@
     <MESSAGE value="..." />
     <MESSAGE value="Added a Scraper Service wrapper to encapsulate running of multiple scrapers." />
     <MESSAGE value="Commented most of the public code." />
-    <option name="LAST_COMMIT_MESSAGE" value="Commented most of the public code." />
+    <MESSAGE value="from pc." />
+    <option name="LAST_COMMIT_MESSAGE" value="from pc." />
   </component>
   <component name="XDebuggerManager">
     <pin-to-top-manager>

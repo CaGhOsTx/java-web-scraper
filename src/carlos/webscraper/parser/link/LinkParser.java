@@ -1,10 +1,14 @@
-package carlos.webscraper;
+package carlos.webscraper.parser.link;
+
+import carlos.webscraper.*;
+import carlos.webscraper.parser.HTMLParser;
 
 import java.io.IOException;
 import java.io.Serial;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Queue;
+import java.nio.file.StandardOpenOption;
+import java.util.Collection;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -15,14 +19,14 @@ import static java.nio.file.Files.newBufferedWriter;
  * Used for parsing links and has an option to parse links
  * that are from the same site only or ones which stick to
  * a specific language.<br/>
- * Implement if you want a different {@link Parsable#pattern()} for link parsing,
+ * Implement if you want a different {@link carlos.webscraper.parser.Parser#pattern()} for link parsing,
  *  otherwise use {@link LinkParser#newStandardLinkParser()} method.
  *  <br/>
  * <b> In situations when multiple {@link WebScraper}s are being used simultaneously,
  * and use the same {@link LinkParser} implementation,
  * give each {@link WebScraperBuilder} a clone of your implementation
  * (make a method similar to</b> {@link LinkParser#newStandardLinkParser()}
- * @see Parsable
+ * @see carlos.webscraper.parser.Parser
  * @author Carlos Milkovic
  * @version a0.9
  */
@@ -34,14 +38,19 @@ public abstract class LinkParser extends HTMLParser {
      * @return a new instance of the standard implementation of {@link LinkParser}
      * @see LinkParser
      */
-    static LinkParser newStandardLinkParser() {
+    public static LinkParser newStandardLinkParser() {
         return new LinkParser() {
             @Serial
             private static final long serialVersionUID = -7245878207925294233L;
 
             @Override
             public String pattern() {
-                return "(?<=href=\")https?://[A-Za-z0-9./:_()\\[\\]{}-]+?(?=\")";
+                return "(?<=href=\")https?://[A-Za-z0-9./_()\\[\\]{}-]+?(?=\")";
+            }
+
+            @Override
+            public long limit() {
+                return 10_000_000;
             }
         };
     }
@@ -66,53 +75,51 @@ public abstract class LinkParser extends HTMLParser {
     public abstract String pattern();
 
     @Override
-    final public boolean onAddFilter(String element) {
-        return  !stayOnSite || matches(element, siteIdentifier)
-                && languagePattern == null || matches(element, languagePattern.PATTERN);
+    public final boolean onAddFilter(String element) {
+        return  (!stayOnSite || matches(element, siteIdentifier)) && (languagePattern == null || matches(element, languagePattern.PATTERN));
     }
 
     private boolean matches(String element, Pattern pattern) {
         return pattern.matcher(element).find();
     }
 
-    @Override
-    final public Path pathToContent() {
-        return Paths.get("visited$" + super.pathToContent());
+    final public Path pathToVisited() {
+        return Paths.get("$visited$" + pathToContent());
     }
 
-    /**
-     * Saves the links to a file. Segregates visited and unvisited links.
-     * @param links {@link WebScraper#unvisitedLinks}
-     * @throws IOException if links could not be saved for any reason.
-     * @see WebScraper
-     * @see LinkParser
-     */
-    final synchronized void saveLinks(Queue<String> links, WebScraper webScraper) throws IOException {
-        flush();
+    final public Path pathToUnvisited(WebScraper scraper) {
+        return Paths.get(scraper + "$unvisited$" + super.pathToContent());
+    }
+
+    public final synchronized void flushUnvisited(Collection<String> links, WebScraper webScraper) {
+        flushUnvisited(links, webScraper, openOption(pathToUnvisited(webScraper)));
+    }
+
+    public final synchronized void flushUnvisited(Collection<String> links, WebScraper webScraper, StandardOpenOption option) {
         if(!links.isEmpty()) {
-            try (var w = newBufferedWriter(Paths.get(webScraper + "$unvisited" + super.pathToContent()), openOption())) {
+            try (var w = newBufferedWriter(pathToUnvisited(webScraper), option)) {
                 for (var link : links) {
                     w.write(link);
                     w.newLine();
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
+        links.clear();
     }
 
     /**
      * Adds the specified link to the visited links {@link HTMLParser#cache} <br/>
      * and flushes the {@link HTMLParser#cache} if necessary.
      * @param link link to be added to the {@link HTMLParser#cache}
-     * @param limit target limit {@link ContentHandler#DATA_LIMIT}
      * @see ContentHandler
      * @see LinkParser
      */
-    final synchronized void addVisitedLink(String link, int limit) {
-        int previousSize = cache.size();
-        if(dataWithinLimit(limit))
-            cache.add(link);
-        if(cacheOverflowing()) flushCache();
-        collected += cache.size() - previousSize;
+    public final void addVisitedLink(String link) {
+        if(dataWithinLimit())
+            collected.addAndGet(cache.add(link) ? 1 : 0);
+        if(cacheOverflowing()) flush(pathToVisited());
     }
 
     /**
@@ -120,14 +127,13 @@ public abstract class LinkParser extends HTMLParser {
      * Due to the way gathering links differs to gathering other types of data, adding links in bulk is not
      * supported, only one link can be visited at a time.
      * @param parsedElements elements to be added.
-     * @param limit {@link ContentHandler#DATA_LIMIT}
      * @return {@link UnsupportedOperationException}
      * @throws UnsupportedOperationException if used.
      * @see LinkParser
      */
     @Override
     @Deprecated
-    final synchronized int addData(Set<String> parsedElements, int limit) throws UnsupportedOperationException {
+    public final int addData(Set<String> parsedElements) throws UnsupportedOperationException {
         throw new UnsupportedOperationException("only one link can be visited at a time!");
     }
 
@@ -136,7 +142,7 @@ public abstract class LinkParser extends HTMLParser {
      * @see WebScraperBuilder#build()
      * @see LinkParser
      */
-    final void restrictToSite() {
+    public final void restrictToSite() {
         this.stayOnSite = true;
     }
 
@@ -146,7 +152,7 @@ public abstract class LinkParser extends HTMLParser {
      * @return true if this {@link LinkParser} has already visited this link.
      * @see LinkParser
      */
-    final boolean alreadyVisited(String link) {
+    public final boolean alreadyVisited(String link) {
         return cache.contains(link);
     }
 
@@ -158,7 +164,7 @@ public abstract class LinkParser extends HTMLParser {
      * @see WebScraperBuilder#build()
      * @see LinkParser
      */
-    final void addLanguageFilter(LanguagePattern languagePattern) {
+    public final void addLanguageFilter(LanguagePattern languagePattern) {
         this.languagePattern = languagePattern;
     }
 
@@ -168,7 +174,7 @@ public abstract class LinkParser extends HTMLParser {
      * @throws IllegalArgumentException if the URL is not matched.
      * @see LinkParser
      */
-    final void verify(String url) throws IllegalArgumentException {
+    public final void verify(String url) throws IllegalArgumentException {
         if(!HTTP_PATTERN.matcher(url).matches())
         throw new IllegalArgumentException(url + " is not recognized by " + this + " (" + pattern() + ")");
     }

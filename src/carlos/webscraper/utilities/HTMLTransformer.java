@@ -1,4 +1,6 @@
-package carlos.webscraper;
+package carlos.webscraper.utilities;
+
+import carlos.webscraper.parser.HTMLParser;
 
 /**
  * Utility class containing some useful transformation functions on HTML strings.
