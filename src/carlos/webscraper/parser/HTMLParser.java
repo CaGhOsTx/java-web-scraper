@@ -16,6 +16,7 @@ import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static java.lang.Thread.currentThread;
 import static java.nio.file.Files.exists;
 import static java.nio.file.Files.newBufferedWriter;
 import static java.util.Collections.newSetFromMap;
@@ -35,32 +36,11 @@ public abstract class HTMLParser implements LimitedParser {
 
     public final LocalDateTime timeOfCreation = LocalDateTime.now();
     public final String NAME;
+    public final Pattern PATTERN;
+
     protected AtomicInteger collected = new AtomicInteger(0);
     protected final Set<String> cache = newSetFromMap(new ConcurrentHashMap<>(CACHE_LIMIT));
     protected boolean shouldSave;
-
-    public final Pattern PATTERN;
-
-    /**
-     * Saves the content stored in the cache.
-     * Reason for the method being static is to stop multiple threads
-     * writing the same data when multiple {@link WebScraper}s are collectively using this {@link HTMLParser}.<br/>
-     * The path to saved content is {@link HTMLParser#pathToContent()}
-     * @see WebScraper
-     */
-     public final synchronized void flush(Path p) {
-        if(shouldSave && !cache.isEmpty()) {
-            try (var w = newBufferedWriter(pathToContent(), openOption(p))) {
-                for (var token : cache) {
-                    w.write(token);
-                    w.newLine();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-         cache.clear();
-    }
 
     /**
      * Creates a new {@link HTMLParser} with this name.
@@ -88,13 +68,24 @@ public abstract class HTMLParser implements LimitedParser {
     }
 
     /**
-     * Retrieves the date and time in the following format:
-     * "d-MMM-uuu&HH-mm-ss".
-     * @return date and time.
-     * @see DateTimeFormatter#ofPattern(String)
+     * Saves the content stored in the cache.
+     * Reason for the method being static is to stop multiple threads
+     * writing the same data when multiple {@link WebScraper}s are collectively using this {@link HTMLParser}.<br/>
+     * The path to saved content is {@link HTMLParser#pathToContent()}
+     * @see WebScraper
      */
-    protected final String getDateTime() {
-        return timeOfCreation.format(DateTimeFormatter.ofPattern("d-MMM-uuu&HH-mm-ss"));
+    public final synchronized void flush(Path p) {
+        if(shouldSave && !cache.isEmpty()) {
+            try (var w = newBufferedWriter(pathToContent(), openOption(p))) {
+                for (var token : cache) {
+                    w.write(token);
+                    w.newLine();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        cache.clear();
     }
 
     /**
@@ -103,6 +94,42 @@ public abstract class HTMLParser implements LimitedParser {
      */
     public final boolean reachedLimit() {
         return collected.get() >= limit();
+    }
+
+    /**
+     * Adds parsed elements from the given raw HTML {@link String} to this {@link HTMLParser}'s {@link HTMLParser#cache}.
+     * @param html raw html source {@link String}.
+     * @return change in size of the {@link HTMLParser#cache}.
+     */
+    public final synchronized int addContentFrom(String html) {
+        if(!reachedLimit())
+            return addData(getContent(html));
+        return 0;
+    }
+
+    /**
+     * Adds data provided to the parsers internal cache.
+     * @param parsedElements elements to be added.
+     * @return the change in size of the cache used to monitor {@link WebScraper} individual contributions.
+     * @see WebScraper
+     */
+    private synchronized int addData(Set<String> parsedElements) {
+        int previousSize = cache.size();
+        addNewData(parsedElements);
+        int difference = cache.size() - previousSize;
+        collected.addAndGet(difference);
+        if(cacheOverflowing()) flush(pathToContent());
+        return difference;
+    }
+
+    /**
+     * Retrieves the date and time in the following format:
+     * "d-MMM-uuu&HH-mm-ss".
+     * @return date and time.
+     * @see DateTimeFormatter#ofPattern(String)
+     */
+    protected final String getDateTime() {
+        return timeOfCreation.format(DateTimeFormatter.ofPattern("d-MMM-uuu&HH-mm-ss"));
     }
 
     /**
@@ -122,38 +149,12 @@ public abstract class HTMLParser implements LimitedParser {
         return cache.size();
     }
 
-    /**
-     * Adds data provided to the parsers internal cache.
-     * @param parsedElements elements to be added.
-     * @return the change in size of the cache used to monitor {@link WebScraper} individual contributions.
-     * @see WebScraper
-     */
-    public synchronized int addData(Set<String> parsedElements) {
-        int previousSize = cache.size();
-        addNewData(parsedElements);
-        int difference = cache.size() - previousSize;
-        collected.addAndGet(difference);
-        if(cacheOverflowing()) flush(pathToContent());
-        return difference;
-    }
-
     private void addNewData(Set<String> parsedElements) {
         for(var e : parsedElements){
             if(dataWithinLimit())
                 cache.add(e);
             else break;
         }
-    }
-
-    /**
-     * Adds parsed elements from the given raw HTML {@link String} to this {@link HTMLParser}'s {@link HTMLParser#cache}.
-     * @param html raw html source {@link String}.
-     * @return change in size of the {@link HTMLParser#cache}.
-     */
-    public final synchronized int addContentFrom(String html) {
-        if(!reachedLimit())
-            return addData(getContent(html));
-        return 0;
     }
 
     /**

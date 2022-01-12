@@ -1,6 +1,4 @@
 package carlos.webscraper.parser;
-
-import carlos.webscraper.utilities.HTMLTransformer;
 import carlos.webscraper.WebScraper;
 
 import java.util.function.Predicate;
@@ -10,7 +8,7 @@ import java.util.function.Predicate;
  * for use with WebScraperBuilder#of(StandardHTMLParser...) <br/>
  * <h2>Current Implementations:</h2>
  * <ul>
- *     <li><b>TEXT_PARSER</b> - parses raw text, extend and overwrite it's {@link LimitedParser#onAddFilter(String)}
+ *     <li><b>TEXT</b> - parses raw text, extend and overwrite it's {@link LimitedParser#onAddFilter(String)}
  *     for niche filtering purposes</li>
  * </ul>
  * @author Carlos Milkovic
@@ -26,7 +24,7 @@ public enum StandardParser {
 
         @Override
         public String transform(String html) {
-            return HTMLTransformer.clearTags(html);
+            return Parser.clearTags(html);
         }
     });
 
@@ -74,7 +72,7 @@ public enum StandardParser {
      * @param filter {@link Parser#onAddFilter(String)}.
      * @return this {@link Parser} implementation.
      */
-    public Parser getWithLimitAndFilter(int limit, Predicate<String> filter) {
+    public HTMLParser getWithLimitAndFilter(int limit, Predicate<String> filter) {
         return new HTMLParser(this.name()) {
             @Override
             public String pattern() {

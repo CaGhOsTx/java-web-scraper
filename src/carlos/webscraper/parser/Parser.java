@@ -49,4 +49,8 @@ public interface Parser extends Serializable {
     default boolean onAddFilter(String element) {
         return true;
     }
+
+    static String clearTags(String html) {
+        return html.replaceAll("<.*?>", "");
+    }
 }

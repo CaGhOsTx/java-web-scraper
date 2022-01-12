@@ -1,9 +1,8 @@
 package carlos.webscraper.service;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 enum Action {
@@ -11,22 +10,26 @@ enum Action {
     HELP("returns a list of all possible actions on this service."),
     NAME("returns the name of this service"),
     INFO("returns current scraping information."),
-    START("starts all scrapers added to this service."),
-    STOP("stops all scrapers added to this service."),
+    START_ALL("starts all scrapers added to this service."),
+    STOP_ALL("stops all scrapers added to this service."),
     TIME("prints time elapsed since scraping started."),
     @Deprecated
     SERIALIZE("stops and serializes this service."),
-    LIST("returns names of contained web scrapers"),
-    START_SCRAPER("starts the scraper defined by given options"),
-    STOP_SCRAPER("stops the scraper with the given name"),
-    KILL("shuts this service down forcefully");
+    SLS("returns names of contained web scrapers"),
+    START("starts the scraper with the given name", "-n scraper_name"),
+    STOP("stops the scraper with the given name", "-n scraper_name");
 
     final String info;
-    Consumer<ScraperService> consumer;
-    BiConsumer<ScraperService, List<String>> multiConsumer;
+    final List<String> params;
+
+    Action(String info, String... params) {
+        this.info = info;
+        this.params = Arrays.stream(params).toList();
+    }
 
     Action(String info) {
         this.info = info;
+        params = Collections.emptyList();
     }
 
     static Action fromString(String s) {

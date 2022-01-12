@@ -57,9 +57,6 @@ final public class ScraperService implements Serializable {
             e.printStackTrace();
         }
     }
-    public void stop() throws InterruptedException {
-        scrapers.forEach(WebScraper::stop);
-    }
 
     public static ScraperService deserialize(Path path) {
         try {
@@ -108,25 +105,25 @@ final public class ScraperService implements Serializable {
                 } catch (IllegalStateException e) {
                     System.out.println(e.getMessage());
                 }
-            }while(!in.equals("stop") && !in.equals("serialize"));
+            }while(!in.equals("stop_all") && !in.equals("serialize"));
             Thread.sleep(10_000);
             service.shutdownNow();
+            System.out.println("Scraper service finished!");
         }
     }
-
+    //TODO decouple this into Action
     private Runnable command(String in) {
         return switch(fromString(in)) {
             case NAME -> () -> System.out.println(this);
             case HELP -> this::help;
             case INFO -> this::info;
-            case START -> this::startScrapers;
-            case STOP -> this::stopAll;
+            case START_ALL -> this::startScrapers;
+            case STOP_ALL -> this::stopAll;
             case TIME -> this::time;
-            case LIST -> this::printScraperNames;
+            case SLS -> this::printScraperNames;
             case SERIALIZE -> () -> System.out.println(serialize());
-            case START_SCRAPER -> () -> actionOnScraper(parseOptions(in), WebScraper::start);
-            case STOP_SCRAPER -> () -> actionOnScraper(parseOptions(in), WebScraper::stop);
-            default -> throw new IllegalStateException("Unexpected value: " + fromString(in));
+            case START -> () -> actionOnScraper(parseOptions(in), WebScraper::start);
+            case STOP -> () -> actionOnScraper(parseOptions(in), WebScraper::stop);
         };
     }
 
@@ -181,12 +178,7 @@ final public class ScraperService implements Serializable {
 
     void stopAll() {
         System.out.println("Stopping all scrapers...");
-        try {
-            stop();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        System.out.println("Scraper service finished!");
+        scrapers.forEach(WebScraper::stop);
     }
 
     private void startAll() {

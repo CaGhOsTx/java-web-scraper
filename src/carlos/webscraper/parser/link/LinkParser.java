@@ -72,11 +72,9 @@ public abstract class LinkParser extends HTMLParser {
     }
 
     @Override
-    public abstract String pattern();
-
-    @Override
     public final boolean onAddFilter(String element) {
-        return  (!stayOnSite || matches(element, siteIdentifier)) && (languagePattern == null || matches(element, languagePattern.PATTERN));
+        return  (!stayOnSite || matches(element, siteIdentifier))
+                && (languagePattern == null || matches(element, languagePattern.PATTERN));
     }
 
     private boolean matches(String element, Pattern pattern) {
@@ -123,21 +121,6 @@ public abstract class LinkParser extends HTMLParser {
     }
 
     /**
-     * <b>THIS METHOD IS DEPRECATED!</b>
-     * Due to the way gathering links differs to gathering other types of data, adding links in bulk is not
-     * supported, only one link can be visited at a time.
-     * @param parsedElements elements to be added.
-     * @return {@link UnsupportedOperationException}
-     * @throws UnsupportedOperationException if used.
-     * @see LinkParser
-     */
-    @Override
-    @Deprecated
-    public final int addData(Set<String> parsedElements) throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("only one link can be visited at a time!");
-    }
-
-    /**
      * Enables site restriction filter for this {@link LinkParser}.
      * @see WebScraperBuilder#build()
      * @see LinkParser
@@ -176,6 +159,6 @@ public abstract class LinkParser extends HTMLParser {
      */
     public final void verify(String url) throws IllegalArgumentException {
         if(!HTTP_PATTERN.matcher(url).matches())
-        throw new IllegalArgumentException(url + " is not recognized by " + this + " (" + pattern() + ")");
+        throw new IllegalArgumentException(url + " is not a valid url.");
     }
 }

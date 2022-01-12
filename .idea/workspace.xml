@@ -5,32 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a2b93da5-f13f-4b8a-a660-d86e511bfdca" name="Changes" comment="from pc.">
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/carlos/utilities/package-info.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/exceptions/PageWithoutLinksException.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/exceptions/ReachedEndException.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/package-info.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/Parser.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/link/package-info.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/package-info.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/service/package-info.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/carlos/webscraper/utilities/package-info.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/module-info.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/carlos/HashComparator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/utilities/RepetitiveTaskService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/utilities/SingleTaskService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/Action.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/service/Action.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/ContentHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/ContentHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/HTMLParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/HTMLParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/HTMLTransformer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/utilities/HTMLTransformer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/LanguagePattern.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/link/LanguagePattern.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/LinkParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/link/LinkParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/Option.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/Option.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/Parsable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/LimitedParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/ScraperService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/service/ScraperService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/StandardHTMLParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/StandardParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/WebScraper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/WebScraper.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/WebScraperBuilder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/WebScraperBuilder.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/parser/HTMLParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/HTMLParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/parser/Parser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/Parser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/parser/StandardParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/StandardParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/parser/link/LinkParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/link/LinkParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/service/Action.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/service/Action.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/service/ScraperService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/service/ScraperService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/utilities/HTMLTransformer.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/utilities/package-info.java" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,8 +28,8 @@
         <option value="module-info" />
         <option value="package-info" />
         <option value="Enum" />
-        <option value="Class" />
         <option value="Interface" />
+        <option value="Class" />
       </list>
     </option>
   </component>
@@ -162,8 +147,21 @@
     </key>
   </component>
   <component name="RunManager" selected="Application.Main (1)">
+    <configuration name="Main (1)" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="carlos.Main" />
+      <module name="CS210 Project" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="carlos.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Main" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="Main" />
+      <option name="MAIN_CLASS_NAME" value="carlos.webscraper.Main" />
       <module name="CS210 Project" />
       <extension name="coverage">
         <pattern>
@@ -176,10 +174,17 @@
       </method>
     </configuration>
     <configuration name="Main" type="Application" factoryName="Application" temporary="true">
-      <option name="MAIN_CLASS_NAME" value="Main" />
+      <option name="MAIN_CLASS_NAME" value="carlos.webscraper.Main" />
       <module name="CS210 Project" />
       <RunnerSettings RunnerId="Run" />
       <ConfigurationWrapper RunnerId="Run" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Main" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="carlos.Main" />
+      <module name="CS210 Project" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
@@ -221,7 +226,9 @@
       <workItem from="1641580792073" duration="2000" />
       <workItem from="1641674101734" duration="13738000" />
       <workItem from="1641699880056" duration="6844000" />
-      <workItem from="1641766346200" duration="3361000" />
+      <workItem from="1641766346200" duration="10799000" />
+      <workItem from="1641871735722" duration="10382000" />
+      <workItem from="1641948433937" duration="581000" />
     </task>
     <task id="LOCAL-00001" summary="...">
       <created>1641012272912</created>
@@ -251,7 +258,14 @@
       <option name="project" value="LOCAL" />
       <updated>1641515482528</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="from pc.">
+      <created>1641770990515</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1641770990515</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
