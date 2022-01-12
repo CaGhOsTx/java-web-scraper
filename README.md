@@ -6,7 +6,6 @@ implementations for HTML parsers, with very little extra code, which parse desir
 collect them. Any amount of parsers can be given to a Web Scraper and each parser is computed in parallel. 
   </li>
   <li>Implemented concurrent processing of get requests using a custom, decoupled thread managing service.
-(Standard Executor Service implementations did not fit my needs).
   </li>
   <li>
 Implemented a command line run Scraper Service which has the ability to monitor and control multiple 
