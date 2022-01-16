@@ -1,21 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="ArtifactsWorkspaceSettings">
+    <artifacts-to-build>
+      <artifact name="CS210 Project:jar" />
+    </artifacts-to-build>
+  </component>
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a2b93da5-f13f-4b8a-a660-d86e511bfdca" name="Changes" comment="from pc.">
-      <change afterPath="$PROJECT_DIR$/src/carlos/HashComparator.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+    <list default="true" id="a2b93da5-f13f-4b8a-a660-d86e511bfdca" name="Changes" comment="Dedcoupled concurrency stuff.">
+      <change afterPath="$PROJECT_DIR$/.idea/artifacts/CS210_Project_jar.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/utilities/BitSet.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/utilities/BitSet.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/utilities/SingleTaskService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/utilities/SingleTaskService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/ContentHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/ContentHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/WebScraper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/WebScraper.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/parser/HTMLParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/HTMLParser.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/parser/Parser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/Parser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/parser/StandardParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/StandardParser.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/parser/link/LinkParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/parser/link/LinkParser.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/service/Action.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/service/Action.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/service/ScraperService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/carlos/webscraper/service/ScraperService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/utilities/HTMLTransformer.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/carlos/webscraper/utilities/package-info.java" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,7 +42,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="master" />
+        <entry key="$PROJECT_DIR$" value="experimental" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -48,6 +54,9 @@
       <filtered-out-file-type name="TAG" />
       <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
     </file-type-list>
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="jar://$USER_HOME$/Library/Java/JavaVirtualMachines/openjdk-17.0.1/Contents/Home/lib/src.zip!/java.base/java/lang/Runtime.java" root0="SKIP_INSPECTION" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -128,7 +137,7 @@
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
-    <property name="project.structure.last.edited" value="SDKs" />
+    <property name="project.structure.last.edited" value="Artifacts" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
@@ -146,7 +155,20 @@
       <recent name="" />
     </key>
   </component>
-  <component name="RunManager" selected="Application.Main (1)">
+  <component name="RunManager" selected="Application.HashComparator">
+    <configuration name="HashComparator" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="carlos.HashComparator" />
+      <module name="CS210 Project" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="carlos.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Main (1)" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="carlos.Main" />
       <module name="CS210 Project" />
@@ -198,6 +220,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Application.HashComparator" />
         <item itemvalue="Application.Main (1)" />
         <item itemvalue="Application.Main" />
         <item itemvalue="Application.Test" />
@@ -281,6 +304,7 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="..." />

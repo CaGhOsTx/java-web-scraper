@@ -17,9 +17,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Pattern;
 
-import static carlos.webscraper.parser.HTMLParser.CACHE_LIMIT;
 import static carlos.webscraper.Option.*;
-import static java.lang.Thread.MAX_PRIORITY;
+import static carlos.webscraper.parser.HTMLParser.CACHE_LIMIT;
 import static java.lang.Thread.currentThread;
 
 /**
@@ -156,7 +155,6 @@ public final class WebScraper implements Serializable {
     }
 
     /**
-     * Saves cached links from {@link ContentHandler#linkParser}.
      * @throws IOException if the file could not be opened or created for any reason.
      * @see LinkParser
      */
@@ -309,7 +307,7 @@ public final class WebScraper implements Serializable {
         return new SingleTaskService<>(n) {
             @Override
             public boolean condition(WebScraper webScraper) {
-                return optionHandler.isPresent(UNLIMITED) || contentHandler.notAllAreCollected();
+                return optionHandler.isPresent(UNLIMITED) || !contentHandler.allAreCollected();
             }
 
             @Override
@@ -322,9 +320,14 @@ public final class WebScraper implements Serializable {
                 printDebugMain(contentHandler.getParsers());
             }
 
+            private void signalService() {
+               System.out.writeBytes("LIMIT REACHED, PLEASE STOP SERVICE WITH STOP_ALL\n".getBytes());
+            }
+
             @Override
             public void close(WebScraper webScraper) {
                 try {
+                    if(contentHandler.allAreCollected()) signalService();
                     if (optionHandler.isPresent(SAVE_LINKS)) saveLinks();
                     if (optionHandler.isPresent(SAVE_PARSED_ELEMENTS)) saveAllContent();
                     if (optionHandler.isPresent(SERIALIZE_ON_CLOSE))

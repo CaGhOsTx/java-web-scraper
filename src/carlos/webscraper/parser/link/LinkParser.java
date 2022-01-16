@@ -111,11 +111,10 @@ public abstract class LinkParser extends HTMLParser {
      * Adds the specified link to the visited links {@link HTMLParser#cache} <br/>
      * and flushes the {@link HTMLParser#cache} if necessary.
      * @param link link to be added to the {@link HTMLParser#cache}
-     * @see ContentHandler
      * @see LinkParser
      */
     public final void addVisitedLink(String link) {
-        if(dataWithinLimit())
+        if(!reachedLimit())
             collected.addAndGet(cache.add(link) ? 1 : 0);
         if(cacheOverflowing()) flush(pathToVisited());
     }

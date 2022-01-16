@@ -151,7 +151,7 @@ public abstract class HTMLParser implements LimitedParser {
 
     private void addNewData(Set<String> parsedElements) {
         for(var e : parsedElements){
-            if(dataWithinLimit())
+            if(!reachedLimit())
                 cache.add(e);
             else break;
         }
@@ -171,14 +171,6 @@ public abstract class HTMLParser implements LimitedParser {
      */
     final protected  boolean cacheOverflowing() {
         return cacheSize() >= CACHE_LIMIT;
-    }
-
-    /**
-     * Tests if already collected data and cache overflow the set limit.
-     * @return true if overflowing.
-     */
-    protected final boolean dataWithinLimit() {
-        return collected.get() + cache.size() <= limit();
     }
 
     /**

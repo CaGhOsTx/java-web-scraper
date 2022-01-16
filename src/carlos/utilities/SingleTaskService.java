@@ -62,7 +62,6 @@ public abstract class SingleTaskService<T> {
                 currentThread().interrupt();
             }
         }
-        close(t);
     }
 
     /**
@@ -128,6 +127,7 @@ public abstract class SingleTaskService<T> {
         finally {
             synchronized (this) {
                 threadPool.remove(currentThread());
+                if(!isRunning()) close(t);
                 this.notifyAll();
             }
         }

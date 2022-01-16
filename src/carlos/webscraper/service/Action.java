@@ -13,8 +13,6 @@ enum Action {
     START_ALL("starts all scrapers added to this service."),
     STOP_ALL("stops all scrapers added to this service."),
     TIME("prints time elapsed since scraping started."),
-    @Deprecated
-    SERIALIZE("stops and serializes this service."),
     SLS("returns names of contained web scrapers"),
     START("starts the scraper with the given name", "-n scraper_name"),
     STOP("stops the scraper with the given name", "-n scraper_name");

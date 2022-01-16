@@ -54,3 +54,4 @@ public interface Parser extends Serializable {
         return html.replaceAll("<.*?>", "");
     }
 }
+

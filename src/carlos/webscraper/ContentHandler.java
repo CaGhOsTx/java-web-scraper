@@ -131,7 +131,6 @@ final class ContentHandler implements Serializable {
 
     /**
      * Tests whether the given link has already been visited i.e.
-     * is present in the {@link HTMLParser#cache} which holds visited links.
      * @param link link to be tested
      * @return true if the link is not present in the set.
      */
@@ -153,8 +152,8 @@ final class ContentHandler implements Serializable {
     /**
      * @return true if not all parsers reached their limit.
      */
-    boolean notAllAreCollected() {
-        return !contributionsToParser.keySet().stream().allMatch(HTMLParser::reachedLimit);
+    boolean allAreCollected() {
+        return contributionsToParser.keySet().stream().allMatch(HTMLParser::reachedLimit);
     }
 
     void addLink(String link) {

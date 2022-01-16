@@ -9,17 +9,17 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static carlos.webscraper.service.Action.*;
 
-final public class ScraperService implements Serializable {
+final public class ScraperService {
 
-    @Serial
-    private static final long serialVersionUID = -4106870085490275339L;
     private static final ScraperService SINGLETON = new ScraperService();
 
     private final ExecutorService service = Executors.newCachedThreadPool();
@@ -50,64 +50,29 @@ final public class ScraperService implements Serializable {
         scrapers.add(scraper);
     }
 
-    public void start() {
-        try {
-            control();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+    public CompletableFuture<Void> startAsync() {
+        return CompletableFuture.runAsync(this::control, service);
     }
 
-    public static ScraperService deserialize(Path path) {
-        try {
-            return  (ScraperService) new ObjectInputStream(new BufferedInputStream(new FileInputStream(path.toFile()))).readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        throw new IllegalStateException();
-    }
-
-    @Deprecated
-    public Path serialize() {
-        scrapers.forEach(ws -> ws.addOption(Option.SERIALIZE_ON_CLOSE));
-        stopAll();
-        try {
-            writeObject(new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("ScraperService"))));
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
-        return Path.of("ScraperService").toAbsolutePath();
-    }
-
-    @Serial
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        try {
-            control();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Serial
-    private void writeObject(ObjectOutputStream out) throws IOException, InterruptedException {
-        out.defaultWriteObject();
-    }
-
-    private void control() throws InterruptedException {
+    private void control() {
         System.out.println("Welcome to scraping service 1.0, type help to get a list of possible commands!");
         try (var sc = new Scanner(System.in)) {
             String in;
             do {
                 in = sc.nextLine();
                 try {
-                    service.execute(command(in));
+                    service.submit(command(in));
                 } catch (IllegalStateException e) {
                     System.out.println(e.getMessage());
                 }
-            }while(!in.equals("stop_all") && !in.equals("serialize"));
-            Thread.sleep(10_000);
-            service.shutdownNow();
+            }while(!in.equals("stop_all"));
+            try {
+                Thread.sleep(1000);
+                service.shutdown();
+                service.awaitTermination(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             System.out.println("Scraper service finished!");
         }
     }
@@ -121,7 +86,6 @@ final public class ScraperService implements Serializable {
             case STOP_ALL -> this::stopAll;
             case TIME -> this::time;
             case SLS -> this::printScraperNames;
-            case SERIALIZE -> () -> System.out.println(serialize());
             case START -> () -> actionOnScraper(parseOptions(in), WebScraper::start);
             case STOP -> () -> actionOnScraper(parseOptions(in), WebScraper::stop);
         };
@@ -178,7 +142,8 @@ final public class ScraperService implements Serializable {
 
     void stopAll() {
         System.out.println("Stopping all scrapers...");
-        scrapers.forEach(WebScraper::stop);
+        CompletableFuture.runAsync(() -> scrapers.forEach(WebScraper::stop), service).join();
+        time();
     }
 
     private void startAll() {

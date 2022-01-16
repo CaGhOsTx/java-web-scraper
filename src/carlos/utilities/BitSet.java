@@ -31,7 +31,7 @@ public final class BitSet implements Serializable, Iterable<Boolean> {
     }
 
     /**
-     * Only required for the static {@link BitSet.EMPTY}. <br/>
+     * Only required for the static {@link BitSet#EMPTY}. <br/>
      * API manages its size automatically, so it is not required to pre-set the size.
      * @param size initial size.
      */
